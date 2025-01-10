@@ -3,7 +3,7 @@
 #include <iostream>
 #include "../vendor/stb_image/stb_image.h"
 
-Texture::Texture(const std::string &filePath, int format) : mRendererId(0), mFileName(filePath), mData(nullptr),
+Texture::Texture(const std::string &filePath, const int format) : mRendererId(0), mFileName(filePath), mData(nullptr),
 mWidth(0), mHeight(0), mBpp(0)  {
   // load and create a texture
   glGenTextures(1, &mRendererId);

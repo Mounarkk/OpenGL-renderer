@@ -28,6 +28,7 @@ set(SOURCES
         src/VertexBufferLayout.h
         src/VertexArray.cpp
         src/Texture.cpp
+        src/Cube.cpp
 )
 
 # Create Executable

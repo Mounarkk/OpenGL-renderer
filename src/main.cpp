@@ -144,14 +144,6 @@ int main() {
     layout.Push(GL_FLOAT, 2);
     va.addBuffer(vb, layout);
 
-    // position attribute
-    // ReSharper disable once CppZeroConstantCanBeReplacedWithNullptr
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), static_cast<void *>(0));
-    glEnableVertexAttribArray(0);
-    // texture coord attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-
     const Texture texture_1("../res/textures/container.jpg", GL_RGB);
     const Texture texture_2("../res/textures/awesomeFace.png", GL_RGBA);
 
