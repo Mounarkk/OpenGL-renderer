@@ -1,2 +1,3 @@
+# Base folders to not include
 /cmake-build-debug
 /.idea
