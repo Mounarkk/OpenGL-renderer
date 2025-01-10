@@ -6,6 +6,7 @@
 
 #include "Shader.h"
 #include "Camera.h"
+#include "Cube.h"
 #include "../vendor/stb_image/stb_image.h"
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
@@ -188,6 +189,7 @@ int main() {
       ourShader.setMat4("view", view);
 
       // render boxes
+      vb.bind();
       va.bind();
       for (unsigned int i = 0; i < 10; i++) {
         // calculate the model matrix for each object and pass it to shader before drawing
@@ -199,6 +201,9 @@ int main() {
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
       }
+
+      Cube cube(glm::vec3(0.0f, 0.0f, -1.7f), "../res/textures/container.jpg");
+      cube.draw(ourShader, camera);
 
       // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
       // -------------------------------------------------------------------------------
