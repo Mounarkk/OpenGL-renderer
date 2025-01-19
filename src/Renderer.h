@@ -7,10 +7,6 @@
 
 #include <glad/glad.h>
 
-class Renderer {
+class Renderer {};
 
-};
-
-
-
-#endif //RENDERER_H
+#endif // RENDERER_H

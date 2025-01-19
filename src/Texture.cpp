@@ -1,10 +1,11 @@
 #include "Texture.h"
 
-#include <iostream>
 #include "../vendor/stb_image/stb_image.h"
+#include <iostream>
 
-Texture::Texture(const std::string &filePath, const int format) : mRendererId(0), mFileName(filePath), mData(nullptr),
-mWidth(0), mHeight(0), mBpp(0)  {
+Texture::Texture(const std::string &filePath, const int format)
+    : mRendererId(0), mFileName(filePath), mData(nullptr), mWidth(0),
+      mHeight(0), mBpp(0) {
   // load and create a texture
   glGenTextures(1, &mRendererId);
   glBindTexture(GL_TEXTURE_2D, mRendererId);
@@ -20,24 +21,18 @@ mWidth(0), mHeight(0), mBpp(0)  {
 
   mData = stbi_load(filePath.c_str(), &mWidth, &mHeight, &mBpp, 0);
   if (mData) {
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mWidth, mHeight, 0, format, GL_UNSIGNED_BYTE, mData);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mWidth, mHeight, 0, format,
+                 GL_UNSIGNED_BYTE, mData);
     glGenerateMipmap(GL_TEXTURE_2D);
-  }
-  else {
+  } else {
     std::cout << "Failed to load texture" << std::endl;
   }
   stbi_image_free(mData);
 }
 
-Texture::~Texture() {
-  glDeleteTextures(1, &mRendererId);
-}
+Texture::~Texture() { glDeleteTextures(1, &mRendererId); }
 
 void Texture::bind(unsigned int slot /* From 0 to 31 slots */) const {
   glActiveTexture(GL_TEXTURE0 + slot);
   glBindTexture(GL_TEXTURE_2D, mRendererId);
 }
-
-
-
-

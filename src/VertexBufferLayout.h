@@ -1,8 +1,8 @@
 #ifndef VERTEXBUFFERLAYOUT_H
 #define VERTEXBUFFERLAYOUT_H
 
-#include <vector>
 #include "Renderer.h"
+#include <vector>
 
 struct VertexBufferElement {
   unsigned int type;
@@ -11,16 +11,19 @@ struct VertexBufferElement {
 
   static unsigned int getTypeSize(const unsigned int type) {
     switch (type) {
-      case GL_FLOAT:        return 4;
-      case GL_UNSIGNED_INT: return 4;
-    default: return 0;
+    case GL_FLOAT:
+      return 4;
+    case GL_UNSIGNED_INT:
+      return 4;
+    default:
+      return 0;
     }
   }
 };
 
 class VertexBufferLayout {
 public:
-  VertexBufferLayout() : mStride(0) {};
+  VertexBufferLayout() : mStride(0){};
 
   void Push(const unsigned int type, const unsigned int count) {
     VertexBufferElement element = {type, count, GL_FALSE};
@@ -28,7 +31,9 @@ public:
     mStride += VertexBufferElement::getTypeSize(type) * count;
   }
 
-  [[nodiscard]] std::vector<VertexBufferElement> getElements() const { return mElements; }
+  [[nodiscard]] std::vector<VertexBufferElement> getElements() const {
+    return mElements;
+  }
   [[nodiscard]] unsigned int getStride() const { return mStride; }
 
 private:
@@ -36,6 +41,4 @@ private:
   unsigned int mStride;
 };
 
-
-
-#endif //VERTEXBUFFERLAYOUT_H
+#endif // VERTEXBUFFERLAYOUT_H
