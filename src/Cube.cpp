@@ -2,7 +2,7 @@
 
 TexturedCube::TexturedCube(const glm::vec3 &position,
                            const std::string &texturePath)
-    : Cube(position), mTexture(Texture(texturePath, GL_RGB)) {
+    : Cube(position), mVBO(VertexBuffer(texturedCubeVertices, sizeof(texturedCubeVertices))), mTexture(Texture(texturePath, GL_RGB)) {
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 2);
@@ -38,14 +38,13 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
 
   // performs the draw call
   glDrawArrays(GL_TRIANGLES, 0, 36);
-  glGetError();
 }
 
 ColoredCube::ColoredCube(const glm::vec3 &position, const glm::vec3 color)
-    : Cube(position), mColor(color) {
+    : Cube(position), mVBO(VertexBuffer(coloredCubeVertices, sizeof(coloredCubeVertices))), mColor(color) {
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
-  layout.Push(GL_FLOAT, 2);
+  layout.Push(GL_FLOAT, 3);
   this->mVAO.addBuffer(this->mVBO, layout);
 }
 
@@ -78,5 +77,4 @@ void ColoredCube::draw(const Shader &shader, const Camera &camera) const {
 
   // performs the draw call
   glDrawArrays(GL_TRIANGLES, 0, 36);
-  glGetError();
 }

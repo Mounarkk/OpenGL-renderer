@@ -5,7 +5,6 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "../vendor/stb_image/stb_image.h"
-#include "Another_Cube.h"
 #include "Camera.h"
 #include "Cube.h"
 #include "IndexBuffer.h"
@@ -77,10 +76,10 @@ int main() {
 
   // build and compile shader programs
   // ------------------------------------
-  const Shader textureShader("../res/shaders/texture_shader.vert",
-                             "../res/shaders/texture_shader.frag");
-  const Shader colorShader("../res/shaders/object_shader.vert",
-                           "../res/shaders/object_shader.frag");
+  const Shader lightShader("../res/shaders/colored_cube_shader.vert",
+                             "../res/shaders/light_cube_shader.frag");
+  const Shader colorShader("../res/shaders/colored_cube_shader.vert",
+                           "../res/shaders/colored_cube_shader.frag");
 
   // add a scope here to destroy the vertex buffers/array before terminating the
   // opengl context
@@ -100,17 +99,18 @@ int main() {
 
       // render
       // ------
-      glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+      glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      TexturedCube texturedCube(glm::vec3(0.0f, 0.0f, -1.7f),
-                                "../res/textures/container.jpg");
+      ColoredCube lightCube(glm::vec3(0.0f, 1.0f, -4.7f),
+                                glm::vec3(1.0f, 1.0f, 1.0f));
       ColoredCube coloredCube(glm::vec3(0.0f, 2.0f, -1.7f),
                               glm::vec3(1.0f, 0.5f, 0.31f));
-      Another_Cube cube(glm::vec3(0.0f, 0.0f, -3.7f),
-                        "../res/textures/container.jpg");
 
-      texturedCube.draw(textureShader, camera);
+      colorShader.setVec3("lightPos", 0.0f, 1.0f, -4.7f);
+      colorShader.setVec3("viewPos", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+
+      lightCube.draw(lightShader, camera);
       coloredCube.draw(colorShader, camera);
 
       // glfw: swap buffers and poll IO events (keys pressed/released, mouse
