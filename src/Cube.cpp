@@ -53,8 +53,17 @@ void ColoredCube::draw(const Shader &shader, const Camera &camera) const {
   // tell opengl for each sampler to which texture unit it belongs to (only has
   // to be done once)
   // -------------------------------------------------------------------------------------------
-  shader.setVec3("objectColor", mColor.x, mColor.y, mColor.z);
-  shader.setVec3("lightColor", 1.0f, 1.0f, 1.0f);
+
+  shader.setVec3("material.ambient", 0.1f, 0.18725f, 0.1745f);
+  shader.setVec3("material.diffuse", 0.396f, 0.74151f, 0.69102f);
+  shader.setVec3("material.specular", 0.297254f, 0.30829f, 0.306678f);
+  shader.setFloat("material.shininess", 0.6 * 128);
+
+  shader.setVec3("light.position", 0.0f, 1.0f, -4.7f);
+  shader.setVec3("light.ambient", 1.0f, 1.0f, 1.0f);
+  shader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f);
+  shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
   this->mVBO.bind();
   this->mVAO.bind();
 
@@ -78,3 +87,5 @@ void ColoredCube::draw(const Shader &shader, const Camera &camera) const {
   // performs the draw call
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
+
+
