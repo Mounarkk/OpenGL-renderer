@@ -1,9 +1,16 @@
 #include "Cube.h"
 
 TexturedCube::TexturedCube(const glm::vec3 &position,
-                           const std::string &texturePath)
-    : Cube(position), mVBO(VertexBuffer(texturedCubeVertices, sizeof(texturedCubeVertices))), mTexture(Texture(texturePath, GL_RGB)) {
+                           const std::string &diffusePath,
+                           const int diffuseFormat,
+                           const std::string &specularPath,
+                           const int specularFormat)
+    : Cube(position),
+      mVBO(VertexBuffer(vertices, sizeof(vertices))),
+      mDiffuseTexture(Texture(diffusePath, diffuseFormat)),
+mSpecularTexture(Texture(specularPath, specularFormat)){
   VertexBufferLayout layout;
+  layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 2);
   this->mVAO.addBuffer(this->mVBO, layout);
@@ -14,8 +21,17 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
   // tell opengl for each sampler to which texture unit it belongs to (only has
   // to be done once)
   // -------------------------------------------------------------------------------------------
-  shader.setInt("texture1", 0);
-  this->mTexture.bind(0);
+  shader.setInt("material.diffuse", 0);
+  shader.setInt("material.specular", 1);
+  shader.setVec3("light.position", 2.0f, 1.0f, -5.7f);
+  shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+  shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+  shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+  shader.setVec3("material.specular", 0.5f, 0.5f, 0.5f);
+  shader.setFloat("material.shininess", 64.0f);
+
+  this->mDiffuseTexture.bind(0);
+  this->mSpecularTexture.bind(1);
   this->mVBO.bind();
   this->mVAO.bind();
 
@@ -41,7 +57,9 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
 }
 
 ColoredCube::ColoredCube(const glm::vec3 &position, const glm::vec3 color)
-    : Cube(position), mVBO(VertexBuffer(coloredCubeVertices, sizeof(coloredCubeVertices))), mColor(color) {
+    : Cube(position),
+      mVBO(VertexBuffer(coloredCubeVertices, sizeof(coloredCubeVertices))),
+      mColor(color) {
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 3);
@@ -87,5 +105,3 @@ void ColoredCube::draw(const Shader &shader, const Camera &camera) const {
   // performs the draw call
   glDrawArrays(GL_TRIANGLES, 0, 36);
 }
-
-

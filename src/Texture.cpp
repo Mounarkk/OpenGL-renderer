@@ -21,6 +21,7 @@ Texture::Texture(const std::string &filePath, const int format)
 
   mData = stbi_load(filePath.c_str(), &mWidth, &mHeight, &mBpp, 0);
   if (mData) {
+    // Will generate a texture on the currently bound texture object
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mWidth, mHeight, 0, format,
                  GL_UNSIGNED_BYTE, mData);
     glGenerateMipmap(GL_TEXTURE_2D);
@@ -32,7 +33,7 @@ Texture::Texture(const std::string &filePath, const int format)
 
 Texture::~Texture() { glDeleteTextures(1, &mRendererId); }
 
-void Texture::bind(unsigned int slot /* From 0 to 31 slots */) const {
+void Texture::bind(const unsigned int slot /* From 0 to 31 slots */) const {
   glActiveTexture(GL_TEXTURE0 + slot);
   glBindTexture(GL_TEXTURE_2D, mRendererId);
 }
