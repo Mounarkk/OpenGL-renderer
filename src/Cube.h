@@ -25,7 +25,10 @@ protected:
 
 class TexturedCube final : protected Cube {
 public:
-  TexturedCube(const glm::vec3 &position, const std::string &diffusePath, const int diffuseFormat, const std::string &specularPath, const int specularFormat);
+  TexturedCube(const glm::vec3 &position, const std::string &diffusePath,
+               int diffuseFormat, const std::string &specularPath,
+               int specularFormat, const std::string &emissionPath,
+               int emissionFormat);
   ~TexturedCube() override = default;
   void draw(const Shader &shader, const Camera &camera) const override;
 
@@ -33,6 +36,7 @@ private:
   VertexBuffer mVBO;
   Texture mDiffuseTexture;
   Texture mSpecularTexture;
+  Texture mEmissionTexture;
   const float vertices[288] = {
       // positions          // normals           // texture coordinates
       -0.5f, -0.5f, -0.5f, 0.0f,  0.0f,  -1.0f, 0.0f,  0.0f,  0.5f,  -0.5f,

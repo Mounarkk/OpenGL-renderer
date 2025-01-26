@@ -79,7 +79,7 @@ int main() {
   const Shader lightShader("../res/shaders/colored_cube_shader.vert",
                            "../res/shaders/light_cube_shader.frag");
   const Shader textureShader("../res/shaders/textured_cube_shader.vert",
-                           "../res/shaders/textured_cube_shader.frag");
+                             "../res/shaders/textured_cube_shader.frag");
 
   // add a scope here to destroy the vertex buffers/array before terminating the
   // opengl context
@@ -102,16 +102,26 @@ int main() {
       glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-      ColoredCube lightCube(glm::vec3(2.0f, 1.0f, -5.7f),
+      ColoredCube lightCube(glm::vec3(4.0f, 2.0f, -5.7f),
                             glm::vec3(1.0f, 1.0f, 1.0f));
-      TexturedCube texturedCube(glm::vec3(0.0f, 0.0f, 0.0f), "../res/textures/container2.png", GL_RGBA, "../res/textures/container2_specular.png", GL_RGBA);
+
+      std::vector<TexturedCube> TexturedCubes;
+      for (unsigned int i = 0; i < 6; i++) {
+        TexturedCubes.emplace_back(glm::vec3(0.0f + static_cast<float>(i), 0.0f, 0.0f), "../res/textures/container2.png", GL_RGBA,
+                                "../res/textures/container2_specular.png",
+                                GL_RGBA, "../res/textures/matrix.jpg", GL_RGB);
+      }
+
+
 
       textureShader.setVec3("lightPos", 0.0f, 1.0f, -4.7f);
       textureShader.setVec3("viewPos", camera.mPosition.x, camera.mPosition.y,
-                          camera.mPosition.z);
+                            camera.mPosition.z);
 
       lightCube.draw(lightShader, camera);
-      texturedCube.draw(textureShader, camera);
+      for (const auto& cube: TexturedCubes) {
+        cube.draw(textureShader, camera);
+      }
 
       // glfw: swap buffers and poll IO events (keys pressed/released, mouse
       // moved etc.)

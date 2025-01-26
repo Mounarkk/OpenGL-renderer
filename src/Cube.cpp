@@ -4,11 +4,13 @@ TexturedCube::TexturedCube(const glm::vec3 &position,
                            const std::string &diffusePath,
                            const int diffuseFormat,
                            const std::string &specularPath,
-                           const int specularFormat)
-    : Cube(position),
-      mVBO(VertexBuffer(vertices, sizeof(vertices))),
+                           const int specularFormat,
+                           const std::string &emissionPath,
+                           const int emissionFormat)
+    : Cube(position), mVBO(VertexBuffer(vertices, sizeof(vertices))),
       mDiffuseTexture(Texture(diffusePath, diffuseFormat)),
-mSpecularTexture(Texture(specularPath, specularFormat)){
+      mSpecularTexture(Texture(specularPath, specularFormat)),
+      mEmissionTexture(Texture(emissionPath, emissionFormat)) {
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 3);
@@ -23,7 +25,8 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
   // -------------------------------------------------------------------------------------------
   shader.setInt("material.diffuse", 0);
   shader.setInt("material.specular", 1);
-  shader.setVec3("light.position", 2.0f, 1.0f, -5.7f);
+  shader.setInt("material.emission", 2);
+  shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
   shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
   shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
   shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
@@ -32,6 +35,7 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
 
   this->mDiffuseTexture.bind(0);
   this->mSpecularTexture.bind(1);
+  this->mEmissionTexture.bind(2);
   this->mVBO.bind();
   this->mVAO.bind();
 

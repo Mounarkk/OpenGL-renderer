@@ -8,12 +8,13 @@ in vec2 TexCoords;
 struct Material {
    sampler2D diffuse;
    sampler2D specular;
+   sampler2D emission;
    float shininess;
 };
 
 struct Light {
-   vec3 position;
-
+   vec3 direction;
+   
    vec3 ambient;
    vec3 diffuse;
    vec3 specular;
@@ -30,7 +31,7 @@ void main() {
 
    // diffuse lighting
    vec3 norm = normalize(Normal);
-   vec3 lightDir = normalize(light.position - FragPos);
+   vec3 lightDir = normalize(-light.direction);
    float diff = max(dot(norm, lightDir), 0.0);
    vec3 diffuse = light.diffuse * (vec3(texture(material.diffuse, TexCoords)) * diff);
 
@@ -39,6 +40,9 @@ void main() {
    vec3 reflectedDir = normalize(reflect(-lightDir, norm));
    float spec = pow(max(dot(viewDir, reflectedDir), 0.0), material.shininess);
    vec3 specular = (vec3(texture(material.specular, TexCoords)) * spec) * light.specular;
+
+   // emission map
+   vec3 emission = vec3(texture(material.emission, TexCoords));
 
    vec3 result = ambient + diffuse + specular;
 
