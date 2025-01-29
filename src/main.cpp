@@ -1,8 +1,8 @@
 #include "../vendor/glad/include/glad/glad.h"
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp>
+#include <gtc/type_ptr.hpp>
 
 #include "../vendor/stb_image/stb_image.h"
 #include "Camera.h"
@@ -106,7 +106,7 @@ int main() {
                             glm::vec3(1.0f, 1.0f, 1.0f));
 
       std::vector<TexturedCube> TexturedCubes;
-      for (unsigned int i = 0; i < 6; i++) {
+      for (unsigned int i = 0; i < 1; i++) {
         TexturedCubes.emplace_back(glm::vec3(0.0f + static_cast<float>(i), 0.0f, 0.0f), "../res/textures/container2.png", GL_RGBA,
                                 "../res/textures/container2_specular.png",
                                 GL_RGBA, "../res/textures/matrix.jpg", GL_RGB);

@@ -4,8 +4,8 @@
 #include <glad/glad.h>
 
 #include <fstream>
-#include <glm/fwd.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <fwd.hpp>
+#include <gtc/type_ptr.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>

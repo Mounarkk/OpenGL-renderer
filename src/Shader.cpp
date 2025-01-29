@@ -1,7 +1,7 @@
 #include "Shader.h"
 
-#include <glm/fwd.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <fwd.hpp>
+#include <gtc/type_ptr.hpp>
 
 Shader::Shader(const char *vertexPath, const char *fragmentPath) {
   // Get the vertex/fragment source code from filePath

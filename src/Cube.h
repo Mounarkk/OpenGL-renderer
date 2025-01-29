@@ -4,8 +4,8 @@
 #define CUBE_H
 #include "Shader.h"
 
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/vec3.hpp>
+#include <ext/matrix_transform.hpp>
+#include <vec3.hpp>
 
 #include "Camera.h"
 #include "IndexBuffer.h"

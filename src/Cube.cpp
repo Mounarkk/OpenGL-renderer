@@ -26,7 +26,7 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
   shader.setInt("material.diffuse", 0);
   shader.setInt("material.specular", 1);
   shader.setInt("material.emission", 2);
-  shader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+  shader.setVec3("light.direction", -1.0f, -0.0f, -0.0f);
   shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
   shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
   shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
