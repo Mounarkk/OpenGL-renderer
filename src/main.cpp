@@ -84,11 +84,14 @@ int main() {
   const ColoredCube lightCube(glm::vec3(4.0f, 2.0f, -5.7f),
                                 glm::vec3(1.0f, 1.0f, 1.0f));
 
-  const TexturedCube texturedCube(
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            "../res/textures/container2.png", GL_RGBA,
-            "../res/textures/container2_specular.png", GL_RGBA,
-            "../res/textures/matrix.jpg", GL_RGB);
+  std::vector<TexturedCube> cubes;
+  cubes.reserve(6);
+  for (unsigned int i = 0; i < 6; i++) {
+      cubes.emplace_back(glm::vec3(0.0f + static_cast<float>(2 * i), 0.0f, 0.0f),
+                "../res/textures/container2.png", GL_RGBA,
+                "../res/textures/container2_specular.png", GL_RGBA,
+                "../res/textures/matrix.jpg", GL_RGB);}
+
   // add a scope here to destroy the vertex buffers/array before terminating the
   // opengl context
   {
@@ -114,7 +117,9 @@ int main() {
                             camera.mPosition.z);
 
       lightCube.draw(lightShader, camera);
-      texturedCube.draw(textureShader, camera);
+      for (const auto & cube : cubes) {
+        cube.draw(textureShader, camera);
+      }
 
       // glfw: swap buffers and poll IO events (keys pressed/released, mouse
       // moved etc.)
