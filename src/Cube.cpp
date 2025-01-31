@@ -28,13 +28,13 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
   shader.setInt("material.emission", 2);
   shader.setFloat("material.shininess", 64.0f);
 
-  shader.setVec3("light.position", 4.0f, 2.0f, -5.7f);
-  shader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-  shader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
-  shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-  shader.setFloat("light.constant", 1.0f);
-  shader.setFloat("light.linear", 0.045f);
-  shader.setFloat("light.quadratic", 0.0075);
+  shader.setVec3("spotLight.ambient", 0.2f, 0.2f, 0.2f);
+  shader.setVec3("spotLight.diffuse", 0.5f, 0.5f, 0.5f);
+  shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+  shader.setVec3("spotLight.position", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+  shader.setVec3("spotLight.direction", camera.mFront.x, camera.mFront.y, camera.mFront.z);
+  shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+  shader.setFloat("spotlight.outerCutOff", glm::cos(glm::radians(17.5f)));
 
   this->mDiffuseTexture.bind(0);
   this->mSpecularTexture.bind(1);
