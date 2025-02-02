@@ -28,6 +28,7 @@ struct SpotLight {
    vec3 position;
    vec3 direction;
    float cutOff;
+   float outerCutOff;
 
    vec3 ambient;
    vec3 diffuse;
@@ -54,24 +55,23 @@ void main() {
 
 
    float theta = dot(lightDir, normalize(-spotLight.direction)); // Since we use camera.Front, the vector is pointing towards the viewer
+   float epsilon = spotLight.cutOff - spotLight.outerCutOff;
+   float intensity = clamp((theta - spotLight.outerCutOff) / epsilon, 0.0, 1.0);
 
-   if (theta > spotLight.cutOff) {
-      // diffuse lighting
-      float diff = max(dot(norm, lightDir), 0.0);
-      vec3 diffuse = spotLight.diffuse * (vec3(texture(material.diffuse, TexCoords)) * diff);
 
-      // specular lighting
-      vec3 viewDir = normalize(viewPos - FragPos);
-      vec3 reflectedDir = normalize(reflect(-lightDir, norm));
-      float spec = pow(max(dot(viewDir, reflectedDir), 0.0), material.shininess);
-      vec3 specular = (vec3(texture(material.specular, TexCoords)) * spec) * spotLight.specular;
+   // diffuse lighting
+   float diff = max(dot(norm, lightDir), 0.0);
+   vec3 diffuse = spotLight.diffuse * (vec3(texture(material.diffuse, TexCoords)) * diff) * intensity;
 
-      vec3 result = (ambient + diffuse + specular);
+   // specular lighting
+   vec3 viewDir = normalize(viewPos - FragPos);
+   vec3 reflectedDir = normalize(reflect(-lightDir, norm));
+   float spec = pow(max(dot(viewDir, reflectedDir), 0.0), material.shininess);
+   vec3 specular = (vec3(texture(material.specular, TexCoords)) * spec) * spotLight.specular * intensity;
 
-      FragColor = vec4(result, 1);
-   } else {
-      FragColor = vec4(ambient, 1.0);
-   }
+   vec3 result = (ambient + diffuse + specular);
+
+   FragColor = vec4(result, 1);
 
    // emission map
    //vec3 emission = vec3(texture(material.emission, TexCoords));

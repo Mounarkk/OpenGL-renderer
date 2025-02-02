@@ -34,7 +34,7 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
   shader.setVec3("spotLight.position", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
   shader.setVec3("spotLight.direction", camera.mFront.x, camera.mFront.y, camera.mFront.z);
   shader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-  shader.setFloat("spotlight.outerCutOff", glm::cos(glm::radians(17.5f)));
+  shader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
 
   this->mDiffuseTexture.bind(0);
   this->mSpecularTexture.bind(1);
