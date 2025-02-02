@@ -28,6 +28,36 @@ void TexturedCube::draw(const Shader &shader, const Camera &camera) const {
   shader.setInt("material.emission", 2);
   shader.setFloat("material.shininess", 64.0f);
 
+  // Directional light parameters
+  shader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+  shader.setVec3("dirLight.ambient", 0.2f, 0.2f, 0.2f);
+  shader.setVec3("dirLight.diffuse", 0.5f, 0.5f, 0.5f);
+  shader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+
+  // Point lights parameters
+  constexpr glm::vec3 pointLightPositions[] = {
+    glm::vec3( 0.7f,  0.2f,  2.0f),
+    glm::vec3( 2.3f, -3.3f, -4.0f),
+    glm::vec3(-4.0f,  2.0f, -12.0f),
+    glm::vec3( 0.0f,  0.0f, -3.0f)
+  };
+
+  for (int i = 0; i < 4; i++) {
+    std::ostringstream oss;
+    oss << "pointLights[" << i << "]";
+    shader.setVec3(oss.str() + ".position", pointLightPositions[i].x, pointLightPositions[i].y, pointLightPositions[i].z);
+    shader.setVec3(oss.str() + ".position", 0.5f, 0.5f, 0.5f);
+    shader.setVec3(oss.str() + ".position", 1.0f, 1.0f, 1.0f);
+    shader.setVec3(oss.str() + ".position", 1.0f, 1.0f, 1.0f);
+    shader.setVec3(oss.str() + ".ambient", 0.2f, 0.2f, 0.2f);
+    shader.setVec3(oss.str() + ".diffuse", 0.5f, 0.5f, 0.5f);
+    shader.setVec3(oss.str() + ".specular", 1.0f, 1.0f, 1.0f);
+    shader.setFloat(oss.str() + ".constant", 1.0f);
+    shader.setFloat(oss.str() + ".linear", 0.09f);
+    shader.setFloat(oss.str() + ".quadratic", 0.032);
+  }
+
+  // Spotlight parameters
   shader.setVec3("spotLight.ambient", 0.2f, 0.2f, 0.2f);
   shader.setVec3("spotLight.diffuse", 0.5f, 0.5f, 0.5f);
   shader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
