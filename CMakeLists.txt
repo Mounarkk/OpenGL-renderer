@@ -10,9 +10,11 @@ set(GLFW_DIR "${CMAKE_SOURCE_DIR}/vendor/glfw")
 set(GLM_DIR "${CMAKE_SOURCE_DIR}/vendor/glm")
 set(GLAD_DIR "${CMAKE_SOURCE_DIR}/vendor/glad")
 set(STB_IMAGE_DIR "${CMAKE_SOURCE_DIR}/vendor/stb_image")
+set(ASSIMP_DIR "${CMAKE_SOURCE_DIR}/vendor/assimp")
 
 # Add GLFW
 add_subdirectory(${GLFW_DIR} glfw_build)
+add_subdirectory(${ASSIMP_DIR} bin)
 
 # Include directories for libraries
 include_directories(
@@ -20,6 +22,7 @@ include_directories(
         ${GLAD_DIR}/include
         ${STB_IMAGE_DIR}
         ${GLM_DIR}
+        ${ASSIMP_DIR}/include
 )
 
 # Add Source Files
@@ -40,6 +43,6 @@ set(SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Link Libraries
-target_link_libraries(${PROJECT_NAME} glfw ${CMAKE_DL_LIBS})
+target_link_libraries(${PROJECT_NAME} glfw assimp ${CMAKE_DL_LIBS})
 
 
