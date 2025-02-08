@@ -8,6 +8,7 @@
 #include "Camera.h"
 #include "Cube.h"
 #include "IndexBuffer.h"
+#include "Model.h"
 #include "Shader.h"
 #include "Texture.h"
 #include "VertexArray.h"
@@ -74,23 +75,15 @@ int main() {
   // -----------------------------
   glEnable(GL_DEPTH_TEST);
 
-  // build and compile shader programs
+  // build and compile textureShader programs
   // ------------------------------------
   const Shader lightShader("../res/shaders/colored_cube_shader.vert",
                            "../res/shaders/light_cube_shader.frag");
   const Shader textureShader("../res/shaders/textured_cube_shader.vert",
                              "../res/shaders/textured_cube_shader.frag");
+  textureShader.use();
 
-  const ColoredCube lightCube(glm::vec3(4.0f, 2.0f, -5.7f),
-                                glm::vec3(1.0f, 1.0f, 1.0f));
-
-  std::vector<TexturedCube> cubes;
-  cubes.reserve(6);
-  for (unsigned int i = 0; i < 6; i++) {
-      cubes.emplace_back(glm::vec3(0.0f + static_cast<float>(2 * i), 0.0f, 0.0f),
-                "../res/textures/container2.png", GL_RGBA,
-                "../res/textures/container2_specular.png", GL_RGBA,
-                "../res/textures/matrix.jpg", GL_RGB);}
+  Model backPack("../res/models/backpack/backpack.obj");
 
   // add a scope here to destroy the vertex buffers/array before terminating the
   // opengl context
@@ -113,13 +106,65 @@ int main() {
       glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
       textureShader.setVec3("viewPos", camera.mPosition.x, camera.mPosition.y,
                             camera.mPosition.z);
 
-      lightCube.draw(lightShader, camera);
-      for (const auto & cube : cubes) {
-        cube.draw(textureShader, camera);
+      // pass projection matrix to textureShader (note that in this case it could change
+      // every frame)
+      const glm::mat4 projection = glm::perspective(
+          glm::radians(camera.mZoom),
+          static_cast<float>(800) / static_cast<float>(600), 0.1f, 100.0f);
+      textureShader.setMat4("projection", projection);
+
+      // camera/view transformation
+      const glm::mat4 view = camera.getViewMatrix();
+      textureShader.setMat4("view", view);
+
+      // calculate the model matrix
+      auto model = glm::mat4(
+          1.0f); // make sure to initialize matrix to identity matrix first
+      model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+      textureShader.setMat4("model", model);
+
+      textureShader.setFloat("material.shininess", 64.0f);
+
+      // Directional light parameters
+      textureShader.setVec3("dirLight.direction", -0.2f, -1.0f, -0.3f);
+      textureShader.setVec3("dirLight.ambient", 0.05f, 0.05f, 0.05f);
+      textureShader.setVec3("dirLight.diffuse", 0.8f, 0.8f, 0.8f);
+      textureShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+
+      // Point lights parameters
+      constexpr glm::vec3 pointLightPositions[] = {
+        glm::vec3( 0.7f,  0.2f,  2.0f),
+        glm::vec3( 2.3f, -3.3f, -4.0f),
+        glm::vec3(-4.0f,  2.0f, -12.0f),
+        glm::vec3( 0.0f,  0.0f, -3.0f)
+      };
+
+      for (int i = 0; i < 4; i++) {
+        std::ostringstream oss;
+        oss << "pointLights[" << i << "]";
+        textureShader.setVec3(oss.str() + ".position", pointLightPositions[i].x, pointLightPositions[i].y, pointLightPositions[i].z);
+        textureShader.setVec3(oss.str() + ".ambient", 0.02f, 0.02f, 0.02f);
+        textureShader.setVec3(oss.str() + ".diffuse", 0.5f, 0.5f, 0.5f);
+        textureShader.setVec3(oss.str() + ".specular", 1.0f, 1.0f, 1.0f);
+        textureShader.setFloat(oss.str() + ".constant", 1.0f);
+        textureShader.setFloat(oss.str() + ".linear", 0.09f);
+        textureShader.setFloat(oss.str() + ".quadratic", 0.032);
       }
+
+      // Spotlight parameters
+      textureShader.setVec3("spotLight.ambient", 0.05f, 0.05f, 0.05f);
+      textureShader.setVec3("spotLight.diffuse", 0.5f, 0.5f, 0.5f);
+      textureShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
+      textureShader.setVec3("spotLight.position", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
+      textureShader.setVec3("spotLight.direction", camera.mFront.x, camera.mFront.y, camera.mFront.z);
+      textureShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
+      textureShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
+
+      backPack.draw(textureShader);
 
       // glfw: swap buffers and poll IO events (keys pressed/released, mouse
       // moved etc.)

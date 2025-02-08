@@ -8,9 +8,9 @@ TexturedCube::TexturedCube(const glm::vec3 &position,
                            const std::string &emissionPath,
                            const int emissionFormat)
     : Cube(position), mVBO(VertexBuffer(vertices, sizeof(vertices))),
-      mDiffuseTexture(Texture(diffusePath, diffuseFormat)),
-      mSpecularTexture(Texture(specularPath, specularFormat)),
-      mEmissionTexture(Texture(emissionPath, emissionFormat)) {
+      mDiffuseTexture(Texture(diffusePath)),
+      mSpecularTexture(Texture(specularPath)),
+      mEmissionTexture(Texture(emissionPath)) {
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 3);

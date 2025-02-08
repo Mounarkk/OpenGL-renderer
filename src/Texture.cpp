@@ -3,7 +3,7 @@
 #include "../vendor/stb_image/stb_image.h"
 #include <iostream>
 
-Texture::Texture(const std::string &filePath, const int format)
+Texture::Texture(const std::string &filePath)
     : mRendererId(0), mFileName(filePath), mData(nullptr), mWidth(0),
       mHeight(0), mBpp(0) {
   // load and create a texture
@@ -21,6 +21,15 @@ Texture::Texture(const std::string &filePath, const int format)
 
   mData = stbi_load(filePath.c_str(), &mWidth, &mHeight, &mBpp, 0);
   if (mData) {
+    GLenum format;
+    if (mBpp == 1) {
+      format = GL_RED;
+    } else if (mBpp == 3) {
+      format = GL_RGB;
+    } else if (mBpp == 4) {
+      format = GL_RGBA;
+    }
+
     // Will generate a texture on the currently bound texture object
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, mWidth, mHeight, 0, format,
                  GL_UNSIGNED_BYTE, mData);

@@ -37,6 +37,8 @@ set(SOURCES
         src/VertexArray.cpp
         src/Texture.cpp
         src/Cube.cpp
+        src/Mesh.cpp
+        src/Model.cpp
 )
 
 # Create Executable

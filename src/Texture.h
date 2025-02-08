@@ -6,7 +6,7 @@
 
 class Texture {
 public:
-  Texture(const std::string &filePath, int format);
+  explicit Texture(const std::string &filePath);
   ~Texture();
 
   void bind(unsigned int slot = 0) const;
@@ -14,6 +14,7 @@ public:
 
   [[nodiscard]] int getWidth() const { return mWidth; };
   [[nodiscard]] int getHeight() const { return mHeight; };
+  [[nodiscard]] unsigned int getRendererId() const { return mRendererId; };
 
 private:
   unsigned int mRendererId;
