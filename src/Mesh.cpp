@@ -4,8 +4,7 @@
 
 Mesh::Mesh(std::vector<Vertex> &vertices,
            std::vector<unsigned int> &indices,
-           std::vector<Texture_s> &textures) : mVBO(VertexBuffer(&mVertices[0], mVertices.size() * sizeof(Vertex))),
-mIBO(IndexBuffer(&mIndices[0], mIndices.size() * sizeof(unsigned int))){
+           std::vector<Texture_s> &textures) {
   this->mVertices = vertices;
   this->mIndices = indices;
   this->mTextures = textures;
@@ -14,15 +13,27 @@ mIBO(IndexBuffer(&mIndices[0], mIndices.size() * sizeof(unsigned int))){
 }
 
 void Mesh::setupMesh() {
-
-  // Init the vertex array
-   VertexBufferLayout layout;
+  VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 2);
-  this->mVAO = VertexArray();
-  this->mVAO.addBuffer(this->mVBO, layout);
+
+  // Vérification après allocation des buffers
+  this->mIBO = new IndexBuffer(&mIndices[0], mIndices.size() * sizeof(unsigned int));
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) std::cout << "OpenGL error after IBO creation: " << err << std::endl;
+
+  this->mVBO = new VertexBuffer(&mVertices[0], mVertices.size() * sizeof(Vertex));
+  err = glGetError();
+  if (err != GL_NO_ERROR) std::cout << "OpenGL error after VBO creation: " << err << std::endl;
+
+  this->mVAO = new VertexArray();
+  err = glGetError();
+  if (err != GL_NO_ERROR) std::cout << "OpenGL error after VAO creation: " << err << std::endl;
+
+  this->mVAO->addBuffer(*this->mVBO, layout);
 }
+
 
 void Mesh::draw(const Shader &shader) {
   unsigned int diffuseNr = 1;
@@ -35,9 +46,9 @@ void Mesh::draw(const Shader &shader) {
     std::string number;
     std::string name = mTextures[i].type;
     if (name == "texture_diffuse") {
-      number = std::to_string(diffuseNr++);
+      number = std::to_string(diffuseNr);
     } else if (name == "texture_specular") {
-      number = std::to_string(specularNr++);
+      number = std::to_string(specularNr);
     }
 
     name.append(number);
@@ -46,11 +57,13 @@ void Mesh::draw(const Shader &shader) {
     glBindTexture(GL_TEXTURE_2D, mTextures[i].id);
   }
 
+
   // Draw the mesh
-  this->mVBO.bind();
-  this->mIBO.bind();
-  this->mVAO.bind();
+  this->mVAO->bind();
+  this->mVBO->bind();
+  this->mIBO->bind();
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mIndices.size()), GL_UNSIGNED_INT, 0);
+  this->mVAO->unbind();
 }
 
 

@@ -1,12 +1,22 @@
 #include "VertexArray.h"
 
-VertexArray::VertexArray() { glGenVertexArrays(1, &mRendererId); }
+#include <iostream>
 
-VertexArray::~VertexArray() { glDeleteVertexArrays(1, &mRendererId); }
+VertexArray::VertexArray() {
+  glGenVertexArrays(1, &mRendererId);
+  std::cout << "VAO created with ID: " << mRendererId << std::endl;
+}
+
+VertexArray::~VertexArray() {
+  std::cout << "Deleting VAO ID: " << mRendererId << std::endl;
+
+}
 
 void VertexArray::addBuffer(const VertexBuffer &vb,
                             const VertexBufferLayout &layout) const {
   this->bind();
+  GLenum err = glGetError();
+  if (err != GL_NO_ERROR) std::cout << "OpenGL error after addBuffer and after enablind vertex attrib array: " << err << std::endl;
   vb.bind();
   const auto &elements = layout.getElements();
 

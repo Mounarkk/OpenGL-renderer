@@ -40,7 +40,7 @@ Texture::Texture(const std::string &filePath)
   stbi_image_free(mData);
 }
 
-Texture::~Texture() { glDeleteTextures(1, &mRendererId); }
+Texture::~Texture() {  }
 
 void Texture::bind(const unsigned int slot /* From 0 to 31 slots */) const {
   glActiveTexture(GL_TEXTURE0 + slot);

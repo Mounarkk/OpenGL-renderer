@@ -4,6 +4,7 @@
 #include "Shader.h"
 #include "VertexArray.h"
 
+#include <optional>
 #include <vec2.hpp>
 #include <vec3.hpp>
 
@@ -26,12 +27,15 @@ public:
   std::vector<Texture_s> mTextures;
 
   Mesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &indices, std::vector<Texture_s> &textures);
+  ~Mesh() {
+
+  }
   void draw(const Shader &shader);
 
 private:
-  VertexArray mVAO;
-  VertexBuffer mVBO;
-  IndexBuffer mIBO;
+  VertexArray* mVAO = nullptr;
+  VertexBuffer* mVBO = nullptr;
+  IndexBuffer* mIBO = nullptr;
 
   void setupMesh();
 };

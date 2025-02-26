@@ -81,9 +81,9 @@ int main() {
                            "../res/shaders/light_cube_shader.frag");
   const Shader textureShader("../res/shaders/textured_cube_shader.vert",
                              "../res/shaders/textured_cube_shader.frag");
-  textureShader.use();
 
   Model backPack("../res/models/backpack/backpack.obj");
+
 
   // add a scope here to destroy the vertex buffers/array before terminating the
   // opengl context
@@ -106,6 +106,7 @@ int main() {
       glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+      textureShader.use();
 
       textureShader.setVec3("viewPos", camera.mPosition.x, camera.mPosition.y,
                             camera.mPosition.z);
@@ -164,7 +165,16 @@ int main() {
       textureShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
       textureShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
 
+      GLenum err;
+      while ((err = glGetError()) != GL_NO_ERROR) {
+        std::cout << "OpenGL error BEFORE drawing: " << err << std::endl;
+      }
+
       backPack.draw(textureShader);
+      GLenum err_a;
+      while ((err_a = glGetError()) != GL_NO_ERROR) {
+        std::cout << "OpenGL error AFTER drawing: " << err_a << std::endl;
+      }
 
       // glfw: swap buffers and poll IO events (keys pressed/released, mouse
       // moved etc.)
