@@ -37,7 +37,7 @@ set(SOURCES
         src/VertexBuffer.cpp
         src/IndexBuffer.cpp
         src/VertexArray.cpp
-        src/Texture.cpp
+        src/gl/Texture.cpp
         src/Cube.cpp
         src/Mesh.cpp
         src/Model.cpp
