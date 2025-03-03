@@ -11,6 +11,7 @@ set(GLM_DIR "${CMAKE_SOURCE_DIR}/vendor/glm")
 set(GLAD_DIR "${CMAKE_SOURCE_DIR}/vendor/glad")
 set(STB_IMAGE_DIR "${CMAKE_SOURCE_DIR}/vendor/stb_image")
 set(ASSIMP_DIR "${CMAKE_SOURCE_DIR}/vendor/assimp")
+set(SPDLOG_DIR "${CMAKE_SOURCE_DIR}/vendor/spdlog")
 
 # Add GLFW
 add_subdirectory(${GLFW_DIR} glfw_build)
@@ -23,6 +24,7 @@ include_directories(
         ${STB_IMAGE_DIR}
         ${GLM_DIR}
         ${ASSIMP_DIR}/include
+        ${SPDLOG_DIR}/include
 )
 
 # Add Source Files
@@ -39,6 +41,8 @@ set(SOURCES
         src/Cube.cpp
         src/Mesh.cpp
         src/Model.cpp
+        src/core/Logger.cpp
+        src/gl/Debug.cpp
 )
 
 # Create Executable

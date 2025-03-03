@@ -4,11 +4,9 @@
 
 VertexArray::VertexArray() {
   glGenVertexArrays(1, &mRendererId);
-  std::cout << "VAO created with ID: " << mRendererId << std::endl;
 }
 
 VertexArray::~VertexArray() {
-  std::cout << "Deleting VAO ID: " << mRendererId << std::endl;
 
 }
 

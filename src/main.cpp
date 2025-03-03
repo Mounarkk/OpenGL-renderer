@@ -13,6 +13,7 @@
 #include "Texture.h"
 #include "VertexArray.h"
 #include "VertexBuffer.h"
+#include "core/Logger.h"
 
 #include <iostream>
 
