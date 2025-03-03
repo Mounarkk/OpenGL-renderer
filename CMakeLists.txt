@@ -32,7 +32,7 @@ set(SOURCES
         src/main.cpp
         ${GLAD_DIR}/src/glad.c
         ${STB_IMAGE_DIR}/stb_image.cpp
-        src/Shader.cpp
+        src/gl/Shader.cpp
         src/Camera.cpp
         src/VertexBuffer.cpp
         src/IndexBuffer.cpp
