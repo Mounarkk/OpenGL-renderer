@@ -1,7 +1,7 @@
 #ifndef INDEXBUFFER_H
 #define INDEXBUFFER_H
 
-#include "Renderer.h"
+#include "../Renderer.h"
 
 class IndexBuffer {
 public:

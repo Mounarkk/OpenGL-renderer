@@ -1,8 +1,5 @@
-#ifndef SHADER_H
-#define SHADER_H
-
+#pragma once
 #include <glad/glad.h>
-
 #include <fstream>
 #include <fwd.hpp>
 #include <gtc/type_ptr.hpp>
@@ -34,5 +31,3 @@ private:
 
   GLint getUniformLocation(const std::string &name);
 };
-
-#endif // SHADER_H

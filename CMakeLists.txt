@@ -12,6 +12,7 @@ set(GLAD_DIR "${CMAKE_SOURCE_DIR}/vendor/glad")
 set(STB_IMAGE_DIR "${CMAKE_SOURCE_DIR}/vendor/stb_image")
 set(ASSIMP_DIR "${CMAKE_SOURCE_DIR}/vendor/assimp")
 set(SPDLOG_DIR "${CMAKE_SOURCE_DIR}/vendor/spdlog")
+set(ENTT_DIR "${CMAKE_SOURCE_DIR}/vendor/entt")
 
 # Add GLFW
 add_subdirectory(${GLFW_DIR} glfw_build)
@@ -25,6 +26,7 @@ include_directories(
         ${GLM_DIR}
         ${ASSIMP_DIR}/include
         ${SPDLOG_DIR}/include
+        ${ENTT_DIR}/single_include
 )
 
 # Add Source Files
@@ -34,9 +36,9 @@ set(SOURCES
         ${STB_IMAGE_DIR}/stb_image.cpp
         src/gl/Shader.cpp
         src/Camera.cpp
-        src/VertexBuffer.cpp
-        src/IndexBuffer.cpp
-        src/VertexArray.cpp
+        src/gl/VertexBuffer.cpp
+        src/gl/IndexBuffer.cpp
+        src/gl/VertexArray.cpp
         src/gl/Texture.cpp
         src/Cube.cpp
         src/Mesh.cpp
