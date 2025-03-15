@@ -6,8 +6,8 @@
 
 class ResourceManager {
 public:
-  static std::shared_ptr<Texture> LoadTexture(const std::string& path, bool sRGB = false);
-  static std::shared_ptr<Shader> LoadShader(const std::string& vsPath, const std::string& fsPath);
+  static std::shared_ptr<Texture> loadTexture(const std::string& path, bool sRGB = false);
+  static std::shared_ptr<Shader> loadShader(const std::string& vsPath, const std::string& fsPath);
 
 private:
   static std::unordered_map<std::string, std::weak_ptr<Texture>> sTextureCache;

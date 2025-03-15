@@ -9,7 +9,7 @@ public:
   ~Texture();
 
   void bind(GLuint slot = 0) const;
-  GLuint getID() const { return mID; }
+  [[nodiscard]] GLuint getID() const { return mID; }
 
 private:
   unsigned int mID;

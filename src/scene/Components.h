@@ -17,7 +17,7 @@ struct Transform {
   glm::vec3 rotation = {0.0f, 0.0f, 0.0f};
   glm::vec3 scale = {1.0f, 1.0f, 1.0f};
 
-  [[nodiscard]] glm::mat4 GetWorldMatrix() const {
+  [[nodiscard]] glm::mat4 getWorldMatrix() const {
     glm::mat4 transform = translate(transform, position);
     transform = rotate(transform, rotation.z, {0, 0, 1});
     transform = rotate(transform, rotation.y, {0, 1, 0});
