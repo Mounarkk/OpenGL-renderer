@@ -45,6 +45,7 @@ set(SOURCES
         src/Model.cpp
         src/core/Logger.cpp
         src/gl/Debug.cpp
+        src/scene/Components.h
 )
 
 # Create Executable
