@@ -6,6 +6,8 @@ class Scene {
 public:
   Entity createEntity(const std::string& name = "Entity");
 
+  entt::registry& getRegistry() { return m_Registry; };
+
   template<typename T>
   auto getAll() { return m_Registry.view<T>(); }
 

@@ -11,9 +11,9 @@ public:
   template<typename T>
   T& getComponent();
 
-  operator bool() const;
+  explicit operator bool() const;
 
 private:
-  entt::entity m_Handle;
-  Scene* m_Scene;
+  entt::entity mHandle;
+  Scene* mScene;
 };

@@ -34,18 +34,21 @@ set(SOURCES
         src/main.cpp
         ${GLAD_DIR}/src/glad.c
         ${STB_IMAGE_DIR}/stb_image.cpp
-        src/gl/Shader.cpp
         src/Camera.cpp
+        src/Cube.cpp
+        src/core/Logger.cpp
+        src/gl/Shader.cpp
         src/gl/VertexBuffer.cpp
         src/gl/IndexBuffer.cpp
         src/gl/VertexArray.cpp
         src/gl/Texture.cpp
-        src/Cube.cpp
-        src/Mesh.cpp
-        src/Model.cpp
-        src/core/Logger.cpp
         src/gl/Debug.cpp
+        src/rendering/Mesh.cpp
+        src/rendering/Material.cpp
+        src/resource/ModelLoader.cpp
+        src/resource/ResourceManager.cpp
         src/scene/Components.h
+        src/scene/Entity.cpp
 )
 
 # Create Executable
