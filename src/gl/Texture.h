@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
 #include "../core/Logger.h"
 #include <glad/glad.h>
+#include <string>
 
 class Texture {
 public:
@@ -15,5 +15,3 @@ private:
   unsigned int mID;
   int mWidth, mHeight, mChannels;
 };
-
-

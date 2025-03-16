@@ -1,7 +1,6 @@
 #include "Material.h"
 
-Material::Material(std::shared_ptr<Shader> shader)
-    : m_Shader(shader) {}
+Material::Material(std::shared_ptr<Shader> shader) : m_Shader(shader) {}
 
 void Material::bind() const {
   m_Shader->use();
@@ -13,7 +12,7 @@ void Material::bind() const {
 
   // Bind textures
   int textureSlot = 0;
-  for (const auto& [type, texture] : m_Textures) {
+  for (const auto &[type, texture] : m_Textures) {
     texture->bind(textureSlot);
 
     // Set texture uniforms (e.g., "uMaterial.albedoMap")
@@ -45,18 +44,15 @@ void Material::bind() const {
   }
 }
 
-void Material::setAlbedo(const glm::vec3& albedo) {
-  m_Albedo = albedo;
-}
+void Material::setAlbedo(const glm::vec3 &albedo) { m_Albedo = albedo; }
 
-void Material::setMetallic(float metallic) {
-  m_Metallic = metallic;
-}
+void Material::setMetallic(const float metallic) { m_Metallic = metallic; }
 
-void Material::setRoughness(float roughness) {
-  m_Roughness = roughness;
-}
+void Material::setRoughness(const float roughness) { m_Roughness = roughness; }
 
-void Material::setTexture(TextureType type, std::shared_ptr<Texture> texture) {
+void Material::setTexture(const TextureType type,
+                          const std::shared_ptr<Texture> &texture) {
   m_Textures[type] = texture;
 }
+
+std::shared_ptr<Shader> Material::getShader() const { return m_Shader; }

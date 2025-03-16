@@ -1,11 +1,12 @@
 #include "Mesh.h"
 
-Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>& indices,
-           const std::shared_ptr<Material>& material)
-    : mMaterial(material)
-{
+Mesh::Mesh(const std::vector<Vertex> &vertices,
+           const std::vector<unsigned int> &indices,
+           const std::shared_ptr<Material> &material)
+    : mMaterial(material) {
   // Create buffers
-  mVBO = std::make_unique<VertexBuffer>(vertices.data(), vertices.size() * sizeof(Vertex));
+  mVBO = std::make_unique<VertexBuffer>(vertices.data(),
+                                        vertices.size() * sizeof(Vertex));
   mIBO = std::make_unique<IndexBuffer>(indices.data(), indices.size());
 
   // Define vertex layout
@@ -22,8 +23,6 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<unsigned int>&
 void Mesh::draw() const {
   mMaterial->bind();
   mVAO->bind();
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mIBO->getCount()), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mIBO->getCount()),
+                 GL_UNSIGNED_INT, nullptr);
 }
-
-
-

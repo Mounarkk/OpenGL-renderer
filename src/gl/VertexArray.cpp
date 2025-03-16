@@ -2,19 +2,18 @@
 
 #include <iostream>
 
-VertexArray::VertexArray() {
-  glGenVertexArrays(1, &mRendererId);
-}
+VertexArray::VertexArray() { glGenVertexArrays(1, &mRendererId); }
 
-VertexArray::~VertexArray() {
-
-}
+VertexArray::~VertexArray() {}
 
 void VertexArray::addBuffer(const VertexBuffer &vb,
                             const VertexBufferLayout &layout) const {
   this->bind();
   GLenum err = glGetError();
-  if (err != GL_NO_ERROR) std::cout << "OpenGL error after addBuffer and after enablind vertex attrib array: " << err << std::endl;
+  if (err != GL_NO_ERROR)
+    std::cout << "OpenGL error after addBuffer and after enablind vertex "
+                 "attrib array: "
+              << err << std::endl;
   vb.bind();
   const auto &elements = layout.getElements();
 

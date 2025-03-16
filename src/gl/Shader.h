@@ -1,19 +1,18 @@
 #pragma once
-#include <glad/glad.h>
+#include "../core/Logger.h"
+#include <../../vendor/glm/fwd.hpp>
+#include <../../vendor/glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <fwd.hpp>
+#include <glad/glad.h>
 #include <gtc/type_ptr.hpp>
 #include <iostream>
 #include <sstream>
 #include <string>
-#include "../core/Logger.h"
-#include <../../vendor/glm/fwd.hpp>
-#include <../../vendor/glm/gtc/type_ptr.hpp>
 
 class Shader {
 public:
-
-  Shader(const std::string& vertexPath, const std::string& fragmentPath);
+  Shader(const std::string &vertexPath, const std::string &fragmentPath);
   ~Shader();
 
   void use() const;

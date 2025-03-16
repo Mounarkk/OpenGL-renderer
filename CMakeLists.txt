@@ -45,11 +45,13 @@ set(SOURCES
         src/gl/Debug.cpp
         src/rendering/Mesh.cpp
         src/rendering/Material.cpp
+        src/rendering/Renderer.cpp
         src/resource/ModelLoader.cpp
         src/resource/ResourceManager.cpp
         src/scene/Components.h
         src/scene/Entity.cpp
-        src/scene/Scene.h
+        src/scene/Scene.cpp
+        src/systems/RenderingSystem.h
 )
 
 # Create Executable

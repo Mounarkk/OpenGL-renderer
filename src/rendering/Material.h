@@ -21,18 +21,20 @@ public:
   void bind() const;
 
   // Set PBR parameters
-  void setAlbedo(const glm::vec3& albedo);
+  void setAlbedo(const glm::vec3 &albedo);
   void setMetallic(float metallic);
   void setRoughness(float roughness);
 
   // Set textures
-  void setTexture(TextureType type, std::shared_ptr<Texture> texture);
+  void setTexture(TextureType type, const std::shared_ptr<Texture> &texture);
+
+  std::shared_ptr<Shader> getShader() const;
 
 private:
   std::shared_ptr<Shader> m_Shader;
   glm::vec3 m_Albedo = {1.0f, 1.0f, 1.0f}; // Base color
-  float m_Metallic = 0.0f;                       // Metallic factor (0 = dielectric, 1 = metal)
-  float m_Roughness = 0.5f;                      // Roughness factor (0 = smooth, 1 = rough)
+  float m_Metallic = 0.0f;  // Metallic factor (0 = dielectric, 1 = metal)
+  float m_Roughness = 0.5f; // Roughness factor (0 = smooth, 1 = rough)
 
   std::unordered_map<TextureType, std::shared_ptr<Texture>> m_Textures;
 };

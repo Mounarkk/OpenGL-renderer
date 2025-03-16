@@ -85,7 +85,6 @@ int main() {
 
   Model backPack("../res/models/backpack/backpack.obj");
 
-
   // add a scope here to destroy the vertex buffers/array before terminating the
   // opengl context
   {
@@ -112,8 +111,8 @@ int main() {
       textureShader.setVec3("viewPos", camera.mPosition.x, camera.mPosition.y,
                             camera.mPosition.z);
 
-      // pass projection matrix to textureShader (note that in this case it could change
-      // every frame)
+      // pass projection matrix to textureShader (note that in this case it
+      // could change every frame)
       const glm::mat4 projection = glm::perspective(
           glm::radians(camera.mZoom),
           static_cast<float>(800) / static_cast<float>(600), 0.1f, 100.0f);
@@ -139,16 +138,15 @@ int main() {
 
       // Point lights parameters
       constexpr glm::vec3 pointLightPositions[] = {
-        glm::vec3( 0.7f,  0.2f,  2.0f),
-        glm::vec3( 2.3f, -3.3f, -4.0f),
-        glm::vec3(-4.0f,  2.0f, -12.0f),
-        glm::vec3( 0.0f,  0.0f, -3.0f)
-      };
+          glm::vec3(0.7f, 0.2f, 2.0f), glm::vec3(2.3f, -3.3f, -4.0f),
+          glm::vec3(-4.0f, 2.0f, -12.0f), glm::vec3(0.0f, 0.0f, -3.0f)};
 
       for (int i = 0; i < 4; i++) {
         std::ostringstream oss;
         oss << "pointLights[" << i << "]";
-        textureShader.setVec3(oss.str() + ".position", pointLightPositions[i].x, pointLightPositions[i].y, pointLightPositions[i].z);
+        textureShader.setVec3(oss.str() + ".position", pointLightPositions[i].x,
+                              pointLightPositions[i].y,
+                              pointLightPositions[i].z);
         textureShader.setVec3(oss.str() + ".ambient", 0.02f, 0.02f, 0.02f);
         textureShader.setVec3(oss.str() + ".diffuse", 0.5f, 0.5f, 0.5f);
         textureShader.setVec3(oss.str() + ".specular", 1.0f, 1.0f, 1.0f);
@@ -161,10 +159,13 @@ int main() {
       textureShader.setVec3("spotLight.ambient", 0.05f, 0.05f, 0.05f);
       textureShader.setVec3("spotLight.diffuse", 0.5f, 0.5f, 0.5f);
       textureShader.setVec3("spotLight.specular", 1.0f, 1.0f, 1.0f);
-      textureShader.setVec3("spotLight.position", camera.mPosition.x, camera.mPosition.y, camera.mPosition.z);
-      textureShader.setVec3("spotLight.direction", camera.mFront.x, camera.mFront.y, camera.mFront.z);
+      textureShader.setVec3("spotLight.position", camera.mPosition.x,
+                            camera.mPosition.y, camera.mPosition.z);
+      textureShader.setVec3("spotLight.direction", camera.mFront.x,
+                            camera.mFront.y, camera.mFront.z);
       textureShader.setFloat("spotLight.cutOff", glm::cos(glm::radians(12.5f)));
-      textureShader.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));
+      textureShader.setFloat("spotLight.outerCutOff",
+                             glm::cos(glm::radians(17.5f)));
 
       GLenum err;
       while ((err = glGetError()) != GL_NO_ERROR) {

@@ -3,18 +3,18 @@
 #include "Mesh.h"
 #include "Shader.h"
 #include "Texture.h"
-#include "assimp/scene.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
+#include "assimp/scene.h"
 
-unsigned int TextureFromFile(const char *path, const std::string &directory, bool gamma = false);
+unsigned int TextureFromFile(const char *path, const std::string &directory,
+                             bool gamma = false);
 
 class Model {
 public:
-  explicit Model(const std::string &path) {
-    loadModel(path);
-  }
+  explicit Model(const std::string &path) { loadModel(path); }
   void draw(const Shader &shader);
+
 private:
   // optimisation
   std::vector<Texture_s> mTexturesLoaded;
@@ -25,9 +25,9 @@ private:
   void loadModel(const std::string &path);
   void processNode(const aiNode *node, const aiScene *scene);
   Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-  std::vector<Texture_s> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
+  std::vector<Texture_s> loadMaterialTextures(aiMaterial *mat,
+                                              aiTextureType type,
+                                              std::string typeName);
 };
 
-
-
-#endif //MODEL_H
+#endif // MODEL_H

@@ -1,6 +1,6 @@
 #include "Shader.h"
 
-Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
+Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
   // Get the vertex/fragment source code from filePath
   std::string vertexCode;
   std::string fragmentCode;
@@ -22,7 +22,8 @@ Shader::Shader(const std::string& vertexPath, const std::string& fragmentPath) {
     vertexCode = vShaderStream.str();
     fragmentCode = fShaderStream.str();
   } catch ([[maybe_unused]] std::ifstream::failure &e) {
-    Logger::get()->error("Failed to open shader files: {}, {}", vertexPath, fragmentPath);
+    Logger::get()->error("Failed to open shader files: {}, {}", vertexPath,
+                         fragmentPath);
     return;
   }
   const char *vShaderCode = vertexCode.c_str();
@@ -99,16 +100,16 @@ void Shader::setFloat(const std::string &name, const float value) const {
 
 void Shader::setVec3(const std::string &name, const float value1,
                      const float value2, const float value3) const {
-  glUniform3f(glGetUniformLocation(this->mID, name.c_str()), value1,
-              value2, value3);
+  glUniform3f(glGetUniformLocation(this->mID, name.c_str()), value1, value2,
+              value3);
 }
 
 void Shader::setMat4(const std::string &name, const glm::mat4 &matrix) const {
-  glUniformMatrix4fv(glGetUniformLocation(this->mID, name.c_str()), 1,
-                     GL_FALSE, glm::value_ptr(matrix));
+  glUniformMatrix4fv(glGetUniformLocation(this->mID, name.c_str()), 1, GL_FALSE,
+                     glm::value_ptr(matrix));
 }
 
-GLint Shader::getUniformLocation(const std::string& name) {
+GLint Shader::getUniformLocation(const std::string &name) {
   if (mUniformLocationCache.find(name) != mUniformLocationCache.end())
     return mUniformLocationCache[name];
 
