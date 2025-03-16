@@ -11,7 +11,9 @@ public:
   template<typename T>
   T& getComponent();
 
+
   explicit operator bool() const;
+
 
 private:
   entt::entity mHandle;

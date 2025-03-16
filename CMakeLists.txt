@@ -49,6 +49,7 @@ set(SOURCES
         src/resource/ResourceManager.cpp
         src/scene/Components.h
         src/scene/Entity.cpp
+        src/scene/Scene.h
 )
 
 # Create Executable

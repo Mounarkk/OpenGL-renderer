@@ -6,6 +6,7 @@
 
 enum class TextureType {
   Albedo,
+  Specular,
   Normal,
   Metallic,
   Roughness,
@@ -15,7 +16,7 @@ enum class TextureType {
 
 class Material {
 public:
-  Material(std::shared_ptr<Shader> shader);
+  explicit Material(std::shared_ptr<Shader> shader);
 
   void bind() const;
 
@@ -30,8 +31,8 @@ public:
 private:
   std::shared_ptr<Shader> m_Shader;
   glm::vec3 m_Albedo = {1.0f, 1.0f, 1.0f}; // Base color
-  float m_Metallic = 0.0f;                // Metallic factor (0 = dielectric, 1 = metal)
-  float m_Roughness = 0.5f;               // Roughness factor (0 = smooth, 1 = rough)
+  float m_Metallic = 0.0f;                       // Metallic factor (0 = dielectric, 1 = metal)
+  float m_Roughness = 0.5f;                      // Roughness factor (0 = smooth, 1 = rough)
 
   std::unordered_map<TextureType, std::shared_ptr<Texture>> m_Textures;
 };

@@ -3,9 +3,40 @@
 std::unordered_map<std::string, std::weak_ptr<Texture>> ResourceManager::sTextureCache;
 std::unordered_map<std::string, std::weak_ptr<Shader>> ResourceManager::sShaderCache;
 
+std::shared_ptr<Material> ResourceManager::loadMaterial(aiMaterial* aiMaterial) {
+  // Create a new material
+  auto material = std::make_shared<Material>(ResourceManager::loadShader("pbr.vert", "pbr.frag"));
+
+  // Load textures
+  const auto diffuseTextures =
+      loadMaterialTextures(aiMaterial, aiTextureType_DIFFUSE);
+  const auto specularTextures = loadMaterialTextures(aiMaterial, aiTextureType_SPECULAR);
+
+  // Assign textures to material
+  if (!diffuseTextures.empty()) {
+    material->setTexture(TextureType::Albedo, diffuseTextures[0]);
+  }
+  if (!specularTextures.empty()) {
+    material->setTexture(TextureType::Specular, specularTextures[0]);
+  }
+
+  return material;
+}
+
+std::vector<std::shared_ptr<Texture>> ResourceManager::loadMaterialTextures(aiMaterial *mat, aiTextureType type)
+{
+  std::vector<std::shared_ptr<Texture>> textures;
+  for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+  {
+    aiString str;
+    mat->GetTexture(type, i, &str);
+    textures.push_back(loadTexture(str.C_Str()));
+  }
+  return textures;
+}
+
 std::shared_ptr<Texture> ResourceManager::loadTexture(const std::string& path, bool sRGB) {
-  auto it = sTextureCache.find(path);
-  if (it != sTextureCache.end()) {
+  if (const auto it = sTextureCache.find(path); it != sTextureCache.end()) {
     if (auto texture = it->second.lock())
       return texture;
   }
@@ -16,9 +47,8 @@ std::shared_ptr<Texture> ResourceManager::loadTexture(const std::string& path, b
 }
 
 std::shared_ptr<Shader> ResourceManager::loadShader(const std::string& vsPath, const std::string& fsPath) {
-  std::string key = vsPath + "|" + fsPath;
-  auto it = sShaderCache.find(key);
-  if (it != sShaderCache.end()) {
+  const std::string key = vsPath + "|" + fsPath;
+  if (const auto it = sShaderCache.find(key); it != sShaderCache.end()) {
     if (auto shader = it->second.lock())
       return shader;
   }

@@ -21,6 +21,9 @@ void Material::bind() const {
     case TextureType::Albedo:
       m_Shader->setInt("uMaterial.albedoMap", textureSlot);
       break;
+    case TextureType::Specular:
+      m_Shader->setInt("uMaterial.specularMap", textureSlot);
+      break;
     case TextureType::Normal:
       m_Shader->setInt("uMaterial.normalMap", textureSlot);
       break;
