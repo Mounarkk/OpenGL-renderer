@@ -13,6 +13,5 @@ public:
       Renderer::submit({transform.getWorldMatrix(), meshRenderer.mesh,
                         meshRenderer.material});
     }
-    Renderer::flush(viewProj);
   }
 };

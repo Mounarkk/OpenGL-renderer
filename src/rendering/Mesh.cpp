@@ -9,6 +9,7 @@ Mesh::Mesh(const std::vector<Vertex> &vertices,
                                         vertices.size() * sizeof(Vertex));
   mIBO = std::make_unique<IndexBuffer>(indices.data(), indices.size());
 
+  // TODO: basic layout (pos, norm, texcoords)
   // Define vertex layout
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);

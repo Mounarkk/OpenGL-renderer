@@ -1,7 +1,5 @@
-#ifndef CAMERA_H
-#define CAMERA_H
-
-#include "Renderer.h"
+#pragma once
+#include <glad/glad.h>
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 

@@ -12,6 +12,7 @@ struct RenderCommand {
 
 class Renderer {
 public:
+  static void clear();
   static void submit(const RenderCommand &command);
   static void flush(const glm::mat4 &viewProj);
 

@@ -34,7 +34,7 @@ set(SOURCES
         src/main.cpp
         ${GLAD_DIR}/src/glad.c
         ${STB_IMAGE_DIR}/stb_image.cpp
-        src/Camera.cpp
+        src/scene/Camera.cpp
         src/Cube.cpp
         src/core/Logger.cpp
         src/gl/Shader.cpp
@@ -52,6 +52,7 @@ set(SOURCES
         src/scene/Entity.cpp
         src/scene/Scene.cpp
         src/systems/RenderingSystem.h
+        src/application/Application.cpp
 )
 
 # Create Executable
