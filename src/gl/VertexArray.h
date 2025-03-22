@@ -1,7 +1,4 @@
-#ifndef VERTEXARRAY_H
-#define VERTEXARRAY_H
-
-#include "Renderer.h"
+#pragma once
 #include "VertexBuffer.h"
 #include "VertexBufferLayout.h"
 
@@ -10,14 +7,18 @@ public:
   VertexArray();
   ~VertexArray();
 
-  void addBuffer(const VertexBuffer &vb,
-                 const VertexBufferLayout &layout) const;
+  // Disable copying
+  VertexArray(const VertexArray&) = delete;
+  VertexArray& operator=(const VertexArray&) = delete;
 
-  void bind() const;
-  static void unbind();
+  // Enable moving
+  VertexArray(VertexArray&& other) noexcept;
+  VertexArray& operator=(VertexArray&& other) noexcept;
+
+  void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const;
+  void Bind() const;
+  static void Unbind();
 
 private:
-  unsigned int mRendererId;
+  unsigned int mRendererId = 0;
 };
-
-#endif // VERTEXARRAY_H

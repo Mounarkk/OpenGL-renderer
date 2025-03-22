@@ -1,20 +1,42 @@
 #include "IndexBuffer.h"
-
 #include <iostream>
 
-IndexBuffer::IndexBuffer(const unsigned int *data, const unsigned int count)
+IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
     : mCount(count) {
   glGenBuffers(1, &mRendererId);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-               static_cast<GLsizeiptr>(count * sizeof(unsigned int)), data,
-               GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(unsigned int), data, GL_STATIC_DRAW);
 }
 
-IndexBuffer::~IndexBuffer() { glDeleteBuffers(1, &mRendererId); }
+IndexBuffer::~IndexBuffer() {
+  if (mRendererId != 0) {
+    glDeleteBuffers(1, &mRendererId);
+  }
+}
 
-void IndexBuffer::bind() const {
+// Move constructor
+IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept
+    : mRendererId(other.mRendererId), mCount(other.mCount) {
+  other.mRendererId = 0; // Invalidate the moved-from object
+}
+
+// Move assignment operator
+IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
+  if (this != &other) {
+    if (mRendererId != 0) {
+      glDeleteBuffers(1, &mRendererId);
+    }
+    mRendererId = other.mRendererId;
+    mCount = other.mCount;
+    other.mRendererId = 0; // Invalidate the moved-from object
+  }
+  return *this;
+}
+
+void IndexBuffer::Bind() const {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);
 }
 
-void IndexBuffer::unbind() { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); }
+void IndexBuffer::Unbind() {
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}

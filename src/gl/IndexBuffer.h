@@ -1,21 +1,25 @@
-#ifndef INDEXBUFFER_H
-#define INDEXBUFFER_H
-
-#include "../Renderer.h"
+#pragma once
+#include <glad/glad.h>
 
 class IndexBuffer {
 public:
-  IndexBuffer(const unsigned int *data, unsigned int count);
+  IndexBuffer(const unsigned int* data, unsigned int count);
   ~IndexBuffer();
 
-  void bind() const;
-  static void unbind();
+  // Disable copying
+  IndexBuffer(const IndexBuffer&) = delete;
+  IndexBuffer& operator=(const IndexBuffer&) = delete;
 
-  [[nodiscard]] inline unsigned int getCount() const { return mCount; }
+  // Enable moving
+  IndexBuffer(IndexBuffer&& other) noexcept;
+  IndexBuffer& operator=(IndexBuffer&& other) noexcept;
+
+  void Bind() const;
+  static void Unbind();
+
+  [[nodiscard]] inline unsigned int GetCount() const { return mCount; }
 
 private:
-  unsigned int mRendererId;
-  unsigned int mCount;
+  unsigned int mRendererId = 0;
+  unsigned int mCount = 0;
 };
-
-#endif // INDEXBUFFER_H
