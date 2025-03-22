@@ -6,7 +6,7 @@
 
 #include <utility>
 
-Application::Application(int width, int height, std::string title)
+Application::Application(const int width, const int height, std::string title)
     : m_Width(width), m_Height(height), m_Title(std::move(title)),
       m_Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
       m_LastX((static_cast<float>(width) / 2.0f)),
@@ -57,7 +57,7 @@ void Application::Initialize() {
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
 
-  // Initialize scene
+  // Initialize scene TODO: Initialize a scene bro
   // TODO: Default scene here
   ModelLoader::load(m_Scene, "../../res/models/backpack/backpack.obj");
 }

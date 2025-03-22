@@ -8,7 +8,7 @@ Entity ModelLoader::load(Scene &scene, const std::string &path) {
   if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !aiScene->mRootNode) {
     Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    return Entity(); // Invalid entity
+    return Entity(); // Invalid entity, TODO: Well, I don't think it works to return this
   }
 
   const Entity root = scene.createEntity("ModelRoot");
@@ -26,6 +26,7 @@ void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
   // Process meshes
   for (unsigned i = 0; i < node->mNumMeshes; i++) {
     aiMesh *mesh = aiScene->mMeshes[node->mMeshes[i]];
+    // TODO: Maybe make a parent-child relationship system via Entt ?
     processMesh(mesh, aiScene, scene, entity);
   }
 
