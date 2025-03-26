@@ -17,7 +17,7 @@ void Renderer::flush(const glm::mat4 &viewProj) {
             });
 
   // Batch draw calls
-  for (const auto &[transform, mesh, material] : s_CommandQueue) {
+  for (const auto &[transform, mesh, material, lights] : s_CommandQueue) {
     material->bind();
     material->getShader()->setMat4("uViewProj", viewProj);
     material->getShader()->setMat4("uModel", transform);

@@ -52,6 +52,7 @@ set(SOURCES
         src/scene/Entity.cpp
         src/scene/Scene.cpp
         src/systems/RenderingSystem.h
+        src/rendering/LightManager.cpp
         src/application/Application.cpp
 )
 

@@ -5,13 +5,13 @@
 
 class RenderingSystem {
 public:
-  static void onUpdate(Scene &scene, const glm::mat4 &viewProj) {
+  static void onUpdate(Scene &scene) {
     auto view = scene.getAll<Transform, MeshRenderer>();
     for (auto entity : view) {
       auto &transform = view.get<Transform>(entity);
       auto &meshRenderer = view.get<MeshRenderer>(entity);
       Renderer::submit({transform.getWorldMatrix(), meshRenderer.mesh,
-                        meshRenderer.material});
+                        meshRenderer.material, LightManager::getInstance()->getLights()});
     }
   }
 };
