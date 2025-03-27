@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include "../resource/ModelLoader.h"
+#include "../gl/Debug.h"
 
 #include <glad/glad.h>
 
@@ -17,6 +18,8 @@ Application::Application(const int width, const int height, std::string title)
 Application::~Application() { glfwTerminate(); }
 
 void Application::Initialize() {
+  Logger::get()->info("Starting application...");
+
   // GLFW initialization
   if (!glfwInit()) {
     Logger::get()->error("Failed to initialize GLFW");
@@ -56,6 +59,8 @@ void Application::Initialize() {
 
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
+  // Enable debug out put
+  enableGLDebugging();
 
   // Initialize scene TODO: Initialize a scene bro
   // TODO: Default scene here

@@ -39,15 +39,15 @@ struct SpotLight {
 };
 
 struct LightData {
-  DirectionalLight directionalLights;
+  DirectionalLight directionalLight;
   std::vector<PointLight> pointLights;
-  std::vector<SpotLight> spotLights;
+  SpotLight spotLight;
 };
 
 class LightManager {
 public:
   [[nodiscard]] LightData getLights();
-  static void bindLights(Shader& shader);
+  void bindLights(const Shader & shader) const;
 
   static LightManager* getInstance();
 private:
