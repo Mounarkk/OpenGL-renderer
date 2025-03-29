@@ -1,10 +1,10 @@
 #pragma once
-#include <ext/matrix_transform.hpp>
-#include <fwd.hpp>
+#include "../../vendor/glm/glm.hpp"
+#include "../../vendor/glm/gtc/matrix_transform.hpp"
 #include <memory>
 #include <string>
-#include <vec3.hpp>
 
+// Forward declarations
 class Mesh;
 class Material;
 
@@ -18,10 +18,11 @@ struct Transform {
   glm::vec3 scale = {1.0f, 1.0f, 1.0f};
 
   [[nodiscard]] glm::mat4 getWorldMatrix() const {
-    glm::mat4 transform = translate(transform, position);
-    transform = rotate(transform, rotation.z, {0, 0, 1});
-    transform = rotate(transform, rotation.y, {0, 1, 0});
-    transform = rotate(transform, rotation.x, {1, 0, 0});
+    glm::mat4 transform(1.0f);  // Initialize identity matrix
+    transform = glm::translate(transform, position);
+    transform = glm::rotate(transform, rotation.z, glm::vec3(0, 0, 1));
+    transform = glm::rotate(transform, rotation.y, glm::vec3(0, 1, 0));
+    transform = glm::rotate(transform, rotation.x, glm::vec3(1, 0, 0));
     transform = glm::scale(transform, scale);
     return transform;
   }

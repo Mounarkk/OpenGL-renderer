@@ -8,7 +8,7 @@ Entity ModelLoader::load(Scene &scene, const std::string &path) {
   if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !aiScene->mRootNode) {
     Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    return nullptr; // Invalid entity, TODO: Well, I don't think it works to return this
+    return Entity{entt::null, nullptr}; // Invalid entity
   }
 
   const Entity root = scene.createEntity("ModelRoot");

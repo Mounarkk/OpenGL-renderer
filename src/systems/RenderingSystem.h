@@ -6,12 +6,15 @@
 class RenderingSystem {
 public:
   static void onUpdate(Scene &scene) {
-    entt::view<Transform, MeshRenderer> view = scene.getAll<Transform, MeshRenderer>();
+    auto view = scene.getAll<Transform, MeshRenderer>();
+
     for (auto entity : view) {
-      Transform &transform = view.get<Transform>(entity);
-      MeshRenderer &meshRenderer = view.get<MeshRenderer>(entity);
-      Renderer::submit({transform.getWorldMatrix(), meshRenderer.mesh,
-                        meshRenderer.material, LightManager::getInstance()->getLights()});
+      auto [transform, meshRenderer] = view.get<Transform, MeshRenderer>(entity);
+      RenderCommand renderCommand;
+      renderCommand.transform = transform;
+      renderCommand.mesh = meshRenderer.mesh;
+      renderCommand.material = meshRenderer.material;
+      Renderer::submit(renderCommand);
     }
   }
 };

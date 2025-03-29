@@ -6,13 +6,13 @@ class Entity; // Forward declaration
 
 class Scene {
 public:
-  Scene();
+  Scene() = default;
 
   Entity createEntity(const std::string &name = "Entity");
 
   entt::registry &getRegistry();
 
-  template <typename T, typename... Args> auto getAll();
+  template<typename... Component> auto getAll();
 
   void onUpdate(float dt); // Update systems
 

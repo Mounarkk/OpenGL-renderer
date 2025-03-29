@@ -1,20 +1,16 @@
 #include "Scene.h"
 #include "Entity.h"
 
-Scene::Scene() : m_Registry() {}
-
 Entity Scene::createEntity(const std::string &name) {
-  // Create a new entity add to it a Tag component
-  Entity entity = {m_Registry.create(), this};
-  entity.addComponent<Tag>().name = name;
-
-  return entity;
+  const auto entity = m_Registry.create();
+  m_Registry.emplace<Tag>(entity, Tag{name});
+  return Entity{entity, this};
 }
 
 entt::registry &Scene::getRegistry() { return m_Registry; };
 
-template <typename T, typename... Args> auto Scene::getAll() {
-  return m_Registry.view<T, Args...>();
+template <typename... Component > auto Scene::getAll() {
+  return m_Registry.view<Component...>();
 }
 
 

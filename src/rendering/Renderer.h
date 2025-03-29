@@ -1,7 +1,5 @@
 #pragma once
-#include "../rendering/Renderer.h"
 #include "../scene/Components.h"
-#include "LightManager.h"
 #include "Material.h"
 #include "Mesh.h"
 
@@ -9,7 +7,6 @@ struct RenderCommand {
   glm::mat4 transform;
   std::shared_ptr<Mesh> mesh;
   std::shared_ptr<Material> material;
-  LightData lights;
 };
 
 class Renderer {
