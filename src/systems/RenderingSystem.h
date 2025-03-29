@@ -6,9 +6,9 @@
 class RenderingSystem {
 public:
   static void onUpdate(Scene &scene) {
-    auto view = scene.getAll<Transform, MeshRenderer>();
+    const auto view = scene.getAll<Transform, MeshRenderer>();
 
-    for (auto entity : view) {
+    for (const auto entity : view) {
       auto [transform, meshRenderer] = view.get<Transform, MeshRenderer>(entity);
       RenderCommand renderCommand;
       renderCommand.transform = transform;

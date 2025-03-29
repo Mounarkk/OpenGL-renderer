@@ -2,6 +2,8 @@
 
 #include "LightManager.h"
 
+std::vector<RenderCommand> Renderer::s_CommandQueue;
+
 void Renderer::clear() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -20,9 +22,8 @@ void Renderer::flush(const glm::mat4 &viewProj) {
 
   // Batch draw calls
   for (const auto &[transform, mesh, material] : s_CommandQueue) {
-    material->bind();
     material->getShader()->setMat4("uViewProj", viewProj);
-    material->getShader()->setMat4("uModel", transform);
+    material->getShader()->setMat4("uModel", transform.getWorldMatrix());
     LightManager::getInstance()->bindLights(material->getShader());
     mesh->draw();
   }

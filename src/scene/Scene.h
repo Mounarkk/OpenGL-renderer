@@ -12,7 +12,11 @@ public:
 
   entt::registry &getRegistry();
 
-  template<typename... Component> auto getAll();
+  template <typename... Component>
+  auto getAll() {
+      return m_Registry.view<Component...>();
+    }
+
 
   void onUpdate(float dt); // Update systems
 

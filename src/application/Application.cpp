@@ -18,6 +18,7 @@ Application::Application(const int width, const int height, std::string title)
 Application::~Application() { glfwTerminate(); }
 
 void Application::Initialize() {
+  Logger::init();
   Logger::get()->info("Starting application...");
 
   // GLFW initialization
@@ -64,7 +65,7 @@ void Application::Initialize() {
 
   // Initialize scene TODO: Initialize a scene bro
   // TODO: Default scene here
-  ModelLoader::load(m_Scene, "../../res/models/backpack/backpack.obj");
+  ModelLoader::load(m_Scene, "../res/models/backpack/backpack.obj");
 }
 
 void Application::Run() {

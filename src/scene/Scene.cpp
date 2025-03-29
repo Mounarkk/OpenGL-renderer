@@ -9,10 +9,6 @@ Entity Scene::createEntity(const std::string &name) {
 
 entt::registry &Scene::getRegistry() { return m_Registry; };
 
-template <typename... Component > auto Scene::getAll() {
-  return m_Registry.view<Component...>();
-}
-
 
 void Scene::onUpdate(float dt) {
   // Example: Update all entities with Transform and MeshRenderer components

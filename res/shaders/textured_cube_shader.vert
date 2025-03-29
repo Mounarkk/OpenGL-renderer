@@ -7,15 +7,14 @@ out vec3 Normal;
 out vec3 FragPos;
 out vec2 TexCoords;
 
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 uModel;
+uniform mat4 uViewProj;
 
 void main()
 {
     // note that we read the multiplication from right to left
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    gl_Position = uViewProj * uModel * vec4(aPos, 1.0);
     TexCoords = aTexCoords;
-    FragPos = vec3(model * vec4(aPos, 1.0));
-    Normal = mat3(transpose(inverse(model))) * aNormal;
+    FragPos = vec3(uModel * vec4(aPos, 1.0));
+    Normal = mat3(transpose(inverse(uModel))) * aNormal;
 }

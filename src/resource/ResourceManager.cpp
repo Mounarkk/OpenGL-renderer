@@ -10,7 +10,7 @@ ResourceManager::loadMaterial(const aiMaterial *aiMaterial) {
   // Create a new material
   // TODO: Load default shaders here, and they don't exist
   auto material = std::make_shared<Material>(
-      loadShader("../../res/shaders/textured_cube_shader.vert", "../../res/shaders/textured_cube_shader.frag"));
+      loadShader("../res/shaders/textured_cube_shader.vert", "../res/shaders/textured_cube_shader.frag"));
 
   // Load textures
   const auto diffuseTextures =
@@ -36,7 +36,8 @@ ResourceManager::loadMaterialTextures(const aiMaterial *mat,
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
-    textures.push_back(loadTexture(str.C_Str()));
+    // TODO: Well well well. Another hard coded bypass... Need a fix !
+    textures.push_back(loadTexture("../res/models/backpack/" + std::string(str.C_Str())));
   }
   return textures;
 }

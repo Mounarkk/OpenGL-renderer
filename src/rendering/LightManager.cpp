@@ -1,8 +1,10 @@
 #include "LightManager.h"
 #define DEFAULT_NB_POINT_LIGHTS 4
 
+std::mutex LightManager::mMtx;
+LightManager* LightManager::pInstancePtr = nullptr;
+
 LightManager::LightManager() {
-  LightData lightData;
 
   // Point lights parameters
   constexpr glm::vec3 pointLightPositions[DEFAULT_NB_POINT_LIGHTS] = {
@@ -12,7 +14,7 @@ LightManager::LightManager() {
   for (auto pointLightPosition : pointLightPositions) {
     PointLight pointLight;
     pointLight.position = pointLightPosition;
-    lightData.pointLights.push_back(pointLight);
+    mLights.pointLights.push_back(pointLight);
   }
 
   // Directional light and spotlight will be initialized to their default state
