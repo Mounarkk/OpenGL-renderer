@@ -29,8 +29,8 @@ VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
   return *this;
 }
 
-void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const {
-  Bind();
+void VertexArray::addBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const {
+  bind();
   vb.Bind();
 
   const auto& elements = layout.getElements();
@@ -45,10 +45,10 @@ void VertexArray::AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& la
   }
 }
 
-void VertexArray::Bind() const {
+void VertexArray::bind() const {
   glBindVertexArray(mRendererId);
 }
 
-void VertexArray::Unbind() {
+void VertexArray::unbind() {
   glBindVertexArray(0);
 }

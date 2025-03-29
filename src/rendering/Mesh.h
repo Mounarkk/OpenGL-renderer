@@ -3,7 +3,6 @@
 #include "../gl/VertexArray.h"
 #include "../gl/VertexBuffer.h"
 #include "../gl/VertexBufferLayout.h"
-         "
 #include "../rendering/Material.h"
 #include <vector>
 

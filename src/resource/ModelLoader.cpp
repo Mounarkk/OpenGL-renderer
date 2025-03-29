@@ -8,7 +8,7 @@ Entity ModelLoader::load(Scene &scene, const std::string &path) {
   if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !aiScene->mRootNode) {
     Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    return Entity(); // Invalid entity, TODO: Well, I don't think it works to return this
+    return nullptr; // Invalid entity, TODO: Well, I don't think it works to return this
   }
 
   const Entity root = scene.createEntity("ModelRoot");
@@ -69,7 +69,7 @@ Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
   }
 
   // Load material
-  aiMaterial *aiMaterial = aiScene->mMaterials[mesh->mMaterialIndex];
+  const aiMaterial *aiMaterial = aiScene->mMaterials[mesh->mMaterialIndex];
   auto material = ResourceManager::loadMaterial(aiMaterial);
 
   // Create a Mesh and assign it to an entity

@@ -3,6 +3,7 @@
 #include "../rendering/Mesh.h"
 #include "../scene/Components.h"
 #include "../scene/Entity.h"
+#include "../scene/Scene.h"
 #include "ResourceManager.h"
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"

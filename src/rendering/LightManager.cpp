@@ -30,33 +30,33 @@ LightManager *LightManager::getInstance() {
 
 LightData LightManager::getLights() { return mLights; }
 
-void LightManager::bindLights(const Shader &shader) const {
+void LightManager::bindLights(const std::shared_ptr<Shader> &shader) const {
   // Bind directional light
-  shader.setVec3("uDirLight.direction", mLights.directionalLight.direction);
-  shader.setVec3("uDirLight.ambient", mLights.directionalLight.ambient);
-  shader.setVec3("uDirLight.diffuse", mLights.directionalLight.diffuse);
-  shader.setVec3("uDirLight.specular", mLights.directionalLight.specular);
+  shader->setVec3("uDirLight.direction", mLights.directionalLight.direction);
+  shader->setVec3("uDirLight.ambient", mLights.directionalLight.ambient);
+  shader->setVec3("uDirLight.diffuse", mLights.directionalLight.diffuse);
+  shader->setVec3("uDirLight.specular", mLights.directionalLight.specular);
 
   // Bind point lights
   for (int i = 0; i < 4; i++) {
     std::ostringstream oss;
     oss << "uPointLights[" << i << "]";
-    shader.setVec3(oss.str() + ".position", mLights.pointLights[i].position);
-    shader.setVec3(oss.str() + ".ambient", mLights.pointLights[i].ambient);
-    shader.setVec3(oss.str() + ".diffuse", mLights.pointLights[i].diffuse);
-    shader.setVec3(oss.str() + ".specular", mLights.pointLights[i].specular);
-    shader.setFloat(oss.str() + ".constant", mLights.pointLights[i].constant);
-    shader.setFloat(oss.str() + ".linear", mLights.pointLights[i].linear);
-    shader.setFloat(oss.str() + ".quadratic", mLights.pointLights[i].quadratic);
+    shader->setVec3(oss.str() + ".position", mLights.pointLights[i].position);
+    shader->setVec3(oss.str() + ".ambient", mLights.pointLights[i].ambient);
+    shader->setVec3(oss.str() + ".diffuse", mLights.pointLights[i].diffuse);
+    shader->setVec3(oss.str() + ".specular", mLights.pointLights[i].specular);
+    shader->setFloat(oss.str() + ".constant", mLights.pointLights[i].constant);
+    shader->setFloat(oss.str() + ".linear", mLights.pointLights[i].linear);
+    shader->setFloat(oss.str() + ".quadratic", mLights.pointLights[i].quadratic);
   }
 
   // Bind spotlights
-  shader.setVec3("uSpotLight.ambient", mLights.spotLight.ambient);
-  shader.setVec3("uSpotLight.diffuse", mLights.spotLight.diffuse);
-  shader.setVec3("uSpotLight.specular", mLights.spotLight.specular);
-  shader.setVec3("uSpotLight.position", mLights.spotLight.position);
-  shader.setVec3("uSpotLight.direction", mLights.spotLight.direction);
-  shader.setFloat("uSpotLight.cutOff", mLights.spotLight.cutOff);
-  shader.setFloat("uSpotLight.outerCutOff", mLights.spotLight.outerCutOff);
+  shader->setVec3("uSpotLight.ambient", mLights.spotLight.ambient);
+  shader->setVec3("uSpotLight.diffuse", mLights.spotLight.diffuse);
+  shader->setVec3("uSpotLight.specular", mLights.spotLight.specular);
+  shader->setVec3("uSpotLight.position", mLights.spotLight.position);
+  shader->setVec3("uSpotLight.direction", mLights.spotLight.direction);
+  shader->setFloat("uSpotLight.cutOff", mLights.spotLight.cutOff);
+  shader->setFloat("uSpotLight.outerCutOff", mLights.spotLight.outerCutOff);
 }
 

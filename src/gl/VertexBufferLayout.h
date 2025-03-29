@@ -1,7 +1,4 @@
-#ifndef VERTEXBUFFERLAYOUT_H
-#define VERTEXBUFFERLAYOUT_H
-
-#include "../Renderer.h"
+#pragma once
 #include <vector>
 
 struct VertexBufferElement {
@@ -40,5 +37,3 @@ private:
   std::vector<VertexBufferElement> mElements;
   unsigned int mStride;
 };
-
-#endif // VERTEXBUFFERLAYOUT_H

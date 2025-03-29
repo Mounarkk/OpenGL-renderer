@@ -1,8 +1,6 @@
 #pragma once
 #include "../gl/Shader.h"
 #include "../scene/Components.h"
-#include "../scene/Scene.h"
-#include "Renderer.h"
 
 // TODO: All values are initialized to default ones, have to make a system to
 // that they can be changed
@@ -47,7 +45,7 @@ struct LightData {
 class LightManager {
 public:
   [[nodiscard]] LightData getLights();
-  void bindLights(const Shader & shader) const;
+  void bindLights(const std::shared_ptr<Shader>& shader) const;
 
   static LightManager* getInstance();
 private:

@@ -21,6 +21,7 @@ void Renderer::flush(const glm::mat4 &viewProj) {
     material->bind();
     material->getShader()->setMat4("uViewProj", viewProj);
     material->getShader()->setMat4("uModel", transform);
+    LightManager::getInstance()->bindLights(material->getShader());
     mesh->draw();
   }
 

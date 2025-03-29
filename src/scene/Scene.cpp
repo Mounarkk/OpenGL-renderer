@@ -1,4 +1,7 @@
 #include "Scene.h"
+#include "Entity.h"
+
+Scene::Scene() : m_Registry() {}
 
 Entity Scene::createEntity(const std::string &name) {
   // Create a new entity add to it a Tag component
@@ -7,6 +10,13 @@ Entity Scene::createEntity(const std::string &name) {
 
   return entity;
 }
+
+entt::registry &Scene::getRegistry() { return m_Registry; };
+
+template <typename T, typename... Args> auto Scene::getAll() {
+  return m_Registry.view<T, Args...>();
+}
+
 
 void Scene::onUpdate(float dt) {
   // Example: Update all entities with Transform and MeshRenderer components
@@ -19,3 +29,5 @@ void Scene::onUpdate(float dt) {
     // TODO: some logic will be implemented here
   }
 }
+
+

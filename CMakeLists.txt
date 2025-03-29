@@ -35,7 +35,6 @@ set(SOURCES
         ${GLAD_DIR}/src/glad.c
         ${STB_IMAGE_DIR}/stb_image.cpp
         src/scene/Camera.cpp
-        src/Cube.cpp
         src/core/Logger.cpp
         src/gl/Shader.cpp
         src/gl/VertexBuffer.cpp

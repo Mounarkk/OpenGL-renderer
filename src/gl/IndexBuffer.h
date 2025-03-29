@@ -14,10 +14,10 @@ public:
   IndexBuffer(IndexBuffer&& other) noexcept;
   IndexBuffer& operator=(IndexBuffer&& other) noexcept;
 
-  void Bind() const;
-  static void Unbind();
+  void bind() const;
+  static void unbind();
 
-  [[nodiscard]] inline unsigned int GetCount() const { return mCount; }
+  [[nodiscard]] inline unsigned int getCount() const { return mCount; }
 
 private:
   unsigned int mRendererId = 0;

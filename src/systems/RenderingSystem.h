@@ -6,10 +6,10 @@
 class RenderingSystem {
 public:
   static void onUpdate(Scene &scene) {
-    auto view = scene.getAll<Transform, MeshRenderer>();
+    entt::view<Transform, MeshRenderer> view = scene.getAll<Transform, MeshRenderer>();
     for (auto entity : view) {
-      auto &transform = view.get<Transform>(entity);
-      auto &meshRenderer = view.get<MeshRenderer>(entity);
+      Transform &transform = view.get<Transform>(entity);
+      MeshRenderer &meshRenderer = view.get<MeshRenderer>(entity);
       Renderer::submit({transform.getWorldMatrix(), meshRenderer.mesh,
                         meshRenderer.material, LightManager::getInstance()->getLights()});
     }
