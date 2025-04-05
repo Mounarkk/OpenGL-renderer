@@ -45,6 +45,7 @@ void Application::Initialize() {
   }
 
   glfwMakeContextCurrent(m_Window);
+  glfwSetWindowUserPointer(m_Window, this);
   glfwSetFramebufferSizeCallback(m_Window, FrameBufferSizeCallback);
   glfwSetCursorPosCallback(m_Window, MouseCallback);
   glfwSetScrollCallback(m_Window, ScrollCallback);
