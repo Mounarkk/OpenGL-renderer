@@ -5,13 +5,16 @@
 
 class RenderingSystem {
 public:
-  static void onUpdate(Scene &scene, const glm::mat4 &viewProj) {
-    auto view = scene.getAll<Transform, MeshRenderer>();
-    for (auto entity : view) {
-      auto &transform = view.get<Transform>(entity);
-      auto &meshRenderer = view.get<MeshRenderer>(entity);
-      Renderer::submit({transform.getWorldMatrix(), meshRenderer.mesh,
-                        meshRenderer.material});
+  static void onUpdate(Scene &scene) {
+    const auto view = scene.getAll<Transform, MeshRenderer>();
+
+    for (const auto entity : view) {
+      auto [transform, meshRenderer] = view.get<Transform, MeshRenderer>(entity);
+      RenderCommand renderCommand;
+      renderCommand.transform = transform;
+      renderCommand.mesh = meshRenderer.mesh;
+      renderCommand.material = meshRenderer.material;
+      Renderer::submit(renderCommand);
     }
   }
 };

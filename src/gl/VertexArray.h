@@ -15,9 +15,9 @@ public:
   VertexArray(VertexArray&& other) noexcept;
   VertexArray& operator=(VertexArray&& other) noexcept;
 
-  void AddBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const;
-  void Bind() const;
-  static void Unbind();
+  void addBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) const;
+  void bind() const;
+  static void unbind();
 
 private:
   unsigned int mRendererId = 0;

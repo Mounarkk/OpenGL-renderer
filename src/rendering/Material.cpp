@@ -6,7 +6,7 @@ void Material::bind() const {
   m_Shader->use();
 
   // Bind PBR parameters
-  m_Shader->setVec3("uMaterial.albedo", m_Albedo.x, m_Albedo.y, m_Albedo.z);
+  m_Shader->setVec3("uMaterial.albedo", m_Albedo);
   m_Shader->setFloat("uMaterial.metallic", m_Metallic);
   m_Shader->setFloat("uMaterial.roughness", m_Roughness);
 

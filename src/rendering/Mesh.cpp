@@ -24,6 +24,8 @@ Mesh::Mesh(const std::vector<Vertex> &vertices,
 void Mesh::draw() const {
   mMaterial->bind();
   mVAO->bind();
+  mVBO->Bind();
+  mIBO->bind();
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mIBO->getCount()),
                  GL_UNSIGNED_INT, nullptr);
 }

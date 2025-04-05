@@ -33,10 +33,10 @@ IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
   return *this;
 }
 
-void IndexBuffer::Bind() const {
+void IndexBuffer::bind() const {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);
 }
 
-void IndexBuffer::Unbind() {
+void IndexBuffer::unbind() {
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

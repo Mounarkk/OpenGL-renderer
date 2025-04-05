@@ -1,12 +1,13 @@
 #include "Application.h"
 
 #include "../resource/ModelLoader.h"
+#include "../gl/Debug.h"
 
 #include <glad/glad.h>
 
 #include <utility>
 
-Application::Application(int width, int height, std::string title)
+Application::Application(const int width, const int height, std::string title)
     : m_Width(width), m_Height(height), m_Title(std::move(title)),
       m_Camera(glm::vec3(0.0f, 0.0f, 3.0f)),
       m_LastX((static_cast<float>(width) / 2.0f)),
@@ -17,6 +18,9 @@ Application::Application(int width, int height, std::string title)
 Application::~Application() { glfwTerminate(); }
 
 void Application::Initialize() {
+  Logger::init();
+  Logger::get()->info("Starting application...");
+
   // GLFW initialization
   if (!glfwInit()) {
     Logger::get()->error("Failed to initialize GLFW");
@@ -41,6 +45,7 @@ void Application::Initialize() {
   }
 
   glfwMakeContextCurrent(m_Window);
+  glfwSetWindowUserPointer(m_Window, this);
   glfwSetFramebufferSizeCallback(m_Window, FrameBufferSizeCallback);
   glfwSetCursorPosCallback(m_Window, MouseCallback);
   glfwSetScrollCallback(m_Window, ScrollCallback);
@@ -56,10 +61,12 @@ void Application::Initialize() {
 
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
+  // Enable debug out put
+  enableGLDebugging();
 
-  // Initialize scene
+  // Initialize scene TODO: Initialize a scene bro
   // TODO: Default scene here
-  ModelLoader::load(m_Scene, "../../res/models/backpack/backpack.obj");
+  ModelLoader::load(m_Scene, "../res/models/backpack/backpack.obj");
 }
 
 void Application::Run() {
@@ -98,7 +105,7 @@ void Application::ProcessInput() {
     m_Camera.processKeyboard(RIGHT, m_DeltaTime);
 }
 
-void Application::Update(float deltaTime) {
+void Application::Update(const float deltaTime) {
   // Update scene (e.g., animations, physics)
   m_Scene.onUpdate(deltaTime);
 }
@@ -114,38 +121,39 @@ void Application::Render() {
       static_cast<float>(m_Width) / static_cast<float>(m_Height), 0.1f, 100.0f);
 
   // Submit render commands
-  RenderingSystem::onUpdate(m_Scene, projection * view);
+  RenderingSystem::onUpdate(m_Scene);
 
   // Flush render commands
   Renderer::flush(projection * view);
 }
 
 // Static callbacks
-void Application::FrameBufferSizeCallback(GLFWwindow *window, int width,
-                                          int height) {
+void Application::FrameBufferSizeCallback(GLFWwindow *window, const int width,
+                                          const int height) {
   glViewport(0, 0, width, height);
 }
 
-void Application::MouseCallback(GLFWwindow *window, double xPos, double yPos) {
+void Application::MouseCallback(GLFWwindow *window, const double xPos,
+                                const double yPos) {
   static_cast<Application *>(glfwGetWindowUserPointer(window))
       ->HandleMouseInput(xPos, yPos);
 }
 
-void Application::ScrollCallback(GLFWwindow *window, double xOffset,
-                                 double yOffset) {
+void Application::ScrollCallback(GLFWwindow *window, const double xOffset,
+                                 const double yOffset) {
   static_cast<Application *>(glfwGetWindowUserPointer(window))
       ->HandleScrollInput(xOffset, yOffset);
 }
 
-void Application::HandleMouseInput(double xPos, double yPos) {
+void Application::HandleMouseInput(const double xPos, const double yPos) {
   if (m_FirstMouse) {
     m_LastX = static_cast<float>(xPos);
     m_LastY = static_cast<float>(yPos);
     m_FirstMouse = false;
   }
 
-  float xOffset = static_cast<float>(xPos) - m_LastX;
-  float yOffset =
+  const float xOffset = static_cast<float>(xPos) - m_LastX;
+  const float yOffset =
       m_LastY - static_cast<float>(
                     yPos); // Reversed since y-coordinates go from bottom to top
   m_LastX = static_cast<float>(xPos);
@@ -154,6 +162,6 @@ void Application::HandleMouseInput(double xPos, double yPos) {
   m_Camera.processMouseMovement(xOffset, yOffset);
 }
 
-void Application::HandleScrollInput(double xOffset, double yOffset) {
+void Application::HandleScrollInput(double xOffset, const double yOffset) {
   m_Camera.processMouseScroll(static_cast<float>(yOffset));
 }
