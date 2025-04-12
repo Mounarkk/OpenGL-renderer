@@ -6,6 +6,7 @@ class VertexArray {
 public:
   VertexArray();
   ~VertexArray();
+  void clean();
 
   // Disable copying
   VertexArray(const VertexArray&) = delete;

@@ -24,7 +24,7 @@ void Renderer::flush(const glm::mat4 &viewProj) {
   for (const auto &[transform, mesh, material] : s_CommandQueue) {
     material->getShader()->setMat4("uViewProj", viewProj);
     material->getShader()->setMat4("uModel", transform.getWorldMatrix());
-    LightManager::getInstance()->bindLights(material->getShader());
+    LightManager::getInstance().bindLights(material->getShader());
     mesh->draw();
   }
 

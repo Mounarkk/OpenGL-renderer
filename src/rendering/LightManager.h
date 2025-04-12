@@ -47,14 +47,15 @@ public:
   [[nodiscard]] LightData getLights();
   void bindLights(const std::shared_ptr<Shader>& shader) const;
 
-  static LightManager* getInstance();
+  static LightManager& getInstance();
 private:
   LightManager();
+  ~LightManager() = default;
+
+  // No copying or assignment
+  LightManager(const LightManager&) = delete;
+  LightManager& operator=(const LightManager&) = delete;
 
   LightData mLights;
-  // Static pointer to the instance
-  static LightManager* pInstancePtr;
-  // Mutex to ensure thread safety
-  static std::mutex mMtx;
 };
 

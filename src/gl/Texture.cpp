@@ -1,5 +1,6 @@
 #include "Texture.h"
 #include "../../vendor/stb_image/stb_image.h"
+#include "GLFW/glfw3.h"
 
 Texture::Texture(const std::string &path, const bool sRGB) {
   // Load image data
@@ -41,11 +42,17 @@ Texture::Texture(const std::string &path, const bool sRGB) {
 }
 
 Texture::~Texture() {
-  if (mID != 0) {
-    glDeleteTextures(1, &mID);
+  clean();
+}
+
+void Texture::clean() {
+  if (mID != 0 && glfwGetCurrentContext()) {
     Logger::get()->info("Deleted texture ID: {}", mID);
+    glDeleteTextures(1, &mID);
+    mID = 0;
   }
 }
+
 
 void Texture::bind(const GLuint slot) const {
   glActiveTexture(GL_TEXTURE0 + slot);

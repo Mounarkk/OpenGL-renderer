@@ -22,8 +22,8 @@ public:
 
   explicit operator bool() const;
 
-  entt::entity handle() const { return mHandle; }
-  Scene* scene() const { return mScene; }
+  [[nodiscard]] entt::entity handle() const { return mHandle; }
+  [[nodiscard]] Scene* scene() const { return mScene; }
 
 private:
   entt::entity mHandle;

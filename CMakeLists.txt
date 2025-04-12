@@ -42,6 +42,7 @@ set(SOURCES
         src/gl/VertexArray.cpp
         src/gl/Texture.cpp
         src/gl/Debug.cpp
+        src/gl/GLObjectDestroyer.cpp
         src/rendering/Mesh.cpp
         src/rendering/Material.cpp
         src/rendering/Renderer.cpp

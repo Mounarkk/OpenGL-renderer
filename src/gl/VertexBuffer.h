@@ -5,6 +5,7 @@ class VertexBuffer {
 public:
   VertexBuffer(const void* data, unsigned int size);
   ~VertexBuffer();
+  void clean();
 
   // Disable copying
   VertexBuffer(const VertexBuffer&) = delete;

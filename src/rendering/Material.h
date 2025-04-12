@@ -17,6 +17,8 @@ enum class TextureType {
 class Material {
 public:
   explicit Material(std::shared_ptr<Shader> shader);
+  ~Material();
+  void clean();
 
   void bind() const;
 

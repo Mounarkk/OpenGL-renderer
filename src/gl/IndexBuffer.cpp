@@ -1,4 +1,7 @@
 #include "IndexBuffer.h"
+
+#include "GLFW/glfw3.h"
+
 #include <iostream>
 
 IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
@@ -9,10 +12,16 @@ IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
 }
 
 IndexBuffer::~IndexBuffer() {
-  if (mRendererId != 0) {
+  clean();
+}
+
+void IndexBuffer::clean() {
+  if (mRendererId != 0 && glfwGetCurrentContext()) {
     glDeleteBuffers(1, &mRendererId);
+    mRendererId = 0;
   }
 }
+
 
 // Move constructor
 IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept

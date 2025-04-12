@@ -1,5 +1,7 @@
 #include "Shader.h"
 
+#include "GLFW/glfw3.h"
+
 Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
   // Get the vertex/fragment source code from filePath
   std::string vertexCode;
@@ -77,11 +79,17 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
 }
 
 Shader::~Shader() {
-  if (mID != 0) {
-    glDeleteProgram(mID);
+  clean();
+}
+
+void Shader::clean() {
+  if (mID != 0 && glfwGetCurrentContext()) {
     Logger::get()->info("Deleted shader program ID: {}", mID);
+    glDeleteProgram(mID);
+    mID = 0;
   }
 }
+
 
 void Shader::use() const { glUseProgram(this->mID); }
 

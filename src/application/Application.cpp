@@ -1,7 +1,8 @@
 #include "Application.h"
 
-#include "../resource/ModelLoader.h"
 #include "../gl/Debug.h"
+#include "../gl/GLObjectDestroyer.h"
+#include "../resource/ModelLoader.h"
 
 #include <glad/glad.h>
 
@@ -15,7 +16,10 @@ Application::Application(const int width, const int height, std::string title)
   Initialize();
 }
 
-Application::~Application() { glfwTerminate(); }
+Application::~Application() {
+  GLObjectDestroyer::getInstance().cleanupAll();
+  glfwTerminate();
+}
 
 void Application::Initialize() {
   Logger::init();

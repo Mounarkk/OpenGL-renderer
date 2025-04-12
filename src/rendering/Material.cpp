@@ -2,6 +2,24 @@
 
 Material::Material(std::shared_ptr<Shader> shader) : m_Shader(shader) {}
 
+Material::~Material() {
+  clean();
+}
+
+void Material::clean() {
+  if (m_Shader) {
+    m_Shader->clean();
+  }
+
+  for (auto& [key, texture] : m_Textures) {
+    if (texture) {
+      texture->clean();
+    };
+  }
+}
+
+
+
 void Material::bind() const {
   m_Shader->use();
 
@@ -9,6 +27,8 @@ void Material::bind() const {
   m_Shader->setVec3("uMaterial.albedo", m_Albedo);
   m_Shader->setFloat("uMaterial.metallic", m_Metallic);
   m_Shader->setFloat("uMaterial.roughness", m_Roughness);
+  // TODO: 3045th hard coded value, mataku
+  m_Shader->setFloat("uMaterial.shininess", 64.f);
 
   // Bind textures
   int textureSlot = 0;

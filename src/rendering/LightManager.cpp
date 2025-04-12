@@ -1,8 +1,10 @@
 #include "LightManager.h"
 #define DEFAULT_NB_POINT_LIGHTS 4
 
-std::mutex LightManager::mMtx;
-LightManager* LightManager::pInstancePtr = nullptr;
+LightManager& LightManager::getInstance() {
+  static LightManager instance; // Thread-safe, one-time init
+  return instance;
+}
 
 LightManager::LightManager() {
 
@@ -18,16 +20,6 @@ LightManager::LightManager() {
   }
 
   // Directional light and spotlight will be initialized to their default state
-}
-
-LightManager *LightManager::getInstance() {
-  if (pInstancePtr == nullptr) {
-    std::lock_guard lock(mMtx);
-    if (pInstancePtr == nullptr) {
-      pInstancePtr = new LightManager();
-    }
-  }
-  return pInstancePtr;
 }
 
 LightData LightManager::getLights() { return mLights; }

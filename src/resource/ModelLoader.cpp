@@ -1,5 +1,7 @@
 #include "ModelLoader.h"
 
+#include "../gl/GLObjectDestroyer.h"
+
 Entity ModelLoader::load(Scene &scene, const std::string &path) {
   Assimp::Importer importer;
   const aiScene *aiScene =
@@ -74,6 +76,7 @@ Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
 
   // Create a Mesh and assign it to an entity
   auto myMesh = std::make_shared<Mesh>(vertices, indices, material);
+  GLObjectDestroyer::getInstance().registerMesh(myMesh);
 
   Entity meshEntity = scene.createEntity(mesh->mName.C_Str());
   // TODO: Default transform given here

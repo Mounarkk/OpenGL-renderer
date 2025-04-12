@@ -1,4 +1,7 @@
 #include "VertexBuffer.h"
+
+#include "GLFW/glfw3.h"
+
 #include <iostream>
 
 VertexBuffer::VertexBuffer(const void* data, unsigned int size) {
@@ -8,8 +11,13 @@ VertexBuffer::VertexBuffer(const void* data, unsigned int size) {
 }
 
 VertexBuffer::~VertexBuffer() {
-  if (mRendererId != 0) {
+  clean();
+}
+
+void VertexBuffer::clean() {
+  if (mRendererId != 0 && glfwGetCurrentContext()) {
     glDeleteBuffers(1, &mRendererId);
+    mRendererId = 0;
   }
 }
 

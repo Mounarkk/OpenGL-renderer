@@ -7,6 +7,7 @@ class Texture {
 public:
   explicit Texture(const std::string &path, bool sRGB);
   ~Texture();
+  void clean();
 
   void bind(GLuint slot = 0) const;
   [[nodiscard]] GLuint getID() const { return mID; }

@@ -17,11 +17,15 @@ public:
   Mesh(const std::vector<Vertex> &vertices,
        const std::vector<unsigned int> &indices,
        const std::shared_ptr<Material> &material);
+  ~Mesh();
   void draw() const;
+  void clean();
 
 private:
   std::unique_ptr<VertexArray> mVAO;
   std::unique_ptr<VertexBuffer> mVBO;
   std::unique_ptr<IndexBuffer> mIBO;
   std::shared_ptr<Material> mMaterial;
+
+  bool mDestroyed;
 };

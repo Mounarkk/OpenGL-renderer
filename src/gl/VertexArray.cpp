@@ -1,4 +1,7 @@
 #include "VertexArray.h"
+
+#include "GLFW/glfw3.h"
+
 #include <iostream>
 
 VertexArray::VertexArray() {
@@ -6,8 +9,13 @@ VertexArray::VertexArray() {
 }
 
 VertexArray::~VertexArray() {
-  if (mRendererId != 0) {
+  clean();
+}
+
+void VertexArray::clean() {
+  if (mRendererId != 0 && glfwGetCurrentContext()) {
     glDeleteVertexArrays(1, &mRendererId);
+    mRendererId = 0;
   }
 }
 
