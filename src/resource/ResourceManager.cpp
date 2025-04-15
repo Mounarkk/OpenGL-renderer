@@ -6,7 +6,7 @@ std::unordered_map<std::string, std::weak_ptr<Shader>>
     ResourceManager::sShaderCache;
 
 std::shared_ptr<Material>
-ResourceManager::loadMaterial(const aiMaterial *aiMaterial) {
+ResourceManager::loadMaterial(const aiMaterial *aiMaterial, const std::string &path) {
   // Create a new material
   // TODO: Load default shaders here, and they don't exist
   auto material = std::make_shared<Material>(
@@ -14,9 +14,9 @@ ResourceManager::loadMaterial(const aiMaterial *aiMaterial) {
 
   // Load textures
   const auto diffuseTextures =
-      loadMaterialTextures(aiMaterial, aiTextureType_DIFFUSE);
+      loadMaterialTextures(aiMaterial, aiTextureType_DIFFUSE, path);
   const auto specularTextures =
-      loadMaterialTextures(aiMaterial, aiTextureType_SPECULAR);
+      loadMaterialTextures(aiMaterial, aiTextureType_SPECULAR, path);
 
   // Assign textures to material
   if (!diffuseTextures.empty()) {
@@ -31,13 +31,13 @@ ResourceManager::loadMaterial(const aiMaterial *aiMaterial) {
 
 std::vector<std::shared_ptr<Texture>>
 ResourceManager::loadMaterialTextures(const aiMaterial *mat,
-                                      const aiTextureType type) {
+                                      const aiTextureType type,
+                                      const std::string &path) {
   std::vector<std::shared_ptr<Texture>> textures;
   for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
     aiString str;
     mat->GetTexture(type, i, &str);
-    // TODO: Well well well. Another hard coded bypass... Need a fix !
-    textures.push_back(loadTexture("../res/models/backpack/" + std::string(str.C_Str())));
+    textures.push_back(loadTexture(path.c_str() + std::string(str.C_Str())));
   }
   return textures;
 }

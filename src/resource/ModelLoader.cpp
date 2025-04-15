@@ -2,7 +2,7 @@
 
 #include "../gl/GLObjectDestroyer.h"
 
-Entity ModelLoader::load(Scene &scene, const std::string &path) {
+Entity ModelLoader::load(Scene &scene, std::string &path) {
   Assimp::Importer importer;
   const aiScene *aiScene =
       importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -13,13 +13,19 @@ Entity ModelLoader::load(Scene &scene, const std::string &path) {
     return Entity{entt::null, nullptr}; // Invalid entity
   }
 
+  // Get the object path
+  if (const size_t last_slash = path.find_last_of('/');
+      last_slash != std::string::npos) {
+    path = path.substr(0, last_slash + 1);
+  }
+
   const Entity root = scene.createEntity("ModelRoot");
-  processNode(aiScene->mRootNode, aiScene, scene, root);
+  processNode(aiScene->mRootNode, aiScene, scene, root, path);
   return root;
 }
 
 void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
-                              Scene &scene, Entity parent) {
+                              Scene &scene, Entity parent, const std::string &path) {
   // Create an entity for this node
   Entity entity = scene.createEntity(node->mName.C_Str());
   // TODO: Default transform given here
@@ -29,17 +35,17 @@ void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
   for (unsigned i = 0; i < node->mNumMeshes; i++) {
     aiMesh *mesh = aiScene->mMeshes[node->mMeshes[i]];
     // TODO: Maybe make a parent-child relationship system via Entt ?
-    processMesh(mesh, aiScene, scene, entity);
+    processMesh(mesh, aiScene, scene, entity, path);
   }
 
   // Process children
   for (unsigned i = 0; i < node->mNumChildren; i++) {
-    processNode(node->mChildren[i], aiScene, scene, entity);
+    processNode(node->mChildren[i], aiScene, scene, entity, path);
   }
 }
 
 Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
-                                Scene &scene, Entity parent) {
+                                Scene &scene, Entity parent, const std::string &path) {
   // Convert Assimp mesh to our Mesh class
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
@@ -72,7 +78,7 @@ Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
 
   // Load material
   const aiMaterial *aiMaterial = aiScene->mMaterials[mesh->mMaterialIndex];
-  auto material = ResourceManager::loadMaterial(aiMaterial);
+  auto material = ResourceManager::loadMaterial(aiMaterial, path);
 
   // Create a Mesh and assign it to an entity
   auto myMesh = std::make_shared<Mesh>(vertices, indices, material);

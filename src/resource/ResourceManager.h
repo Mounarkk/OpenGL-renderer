@@ -13,9 +13,9 @@ public:
   static std::shared_ptr<Shader> loadShader(const std::string &vsPath,
                                             const std::string &fsPath);
   static std::shared_ptr<Material>
-  loadMaterial(const aiMaterial *aiMaterial);
+  loadMaterial(const aiMaterial *aiMaterial, const std::string &path);
   static std::vector<std::shared_ptr<Texture>>
-  loadMaterialTextures(const aiMaterial *mat, aiTextureType type);
+  loadMaterialTextures(const aiMaterial *mat, aiTextureType type, const std::string &path);
 
 private:
   static std::unordered_map<std::string, std::weak_ptr<Texture>> sTextureCache;

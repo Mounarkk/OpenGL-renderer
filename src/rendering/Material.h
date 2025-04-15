@@ -16,7 +16,7 @@ enum class TextureType {
 
 class Material {
 public:
-  explicit Material(std::shared_ptr<Shader> shader);
+  explicit Material(const std::shared_ptr<Shader> &shader);
   ~Material();
   void clean();
 
@@ -33,10 +33,11 @@ public:
   std::shared_ptr<Shader> getShader() const;
 
 private:
-  std::shared_ptr<Shader> m_Shader;
-  glm::vec3 m_Albedo = {1.0f, 1.0f, 1.0f}; // Base color
-  float m_Metallic = 0.0f;  // Metallic factor (0 = dielectric, 1 = metal)
-  float m_Roughness = 0.5f; // Roughness factor (0 = smooth, 1 = rough)
+  std::shared_ptr<Shader> mShader;
+  glm::vec3 mAlbedo = {1.0f, 1.0f, 1.0f}; // Base color
+  float mMetallic = 0.0f;  // Metallic factor (0 = dielectric, 1 = metal)
+  float mRoughness = 0.5f; // Roughness factor (0 = smooth, 1 = rough)
+  float mShininess = 64.f;
 
   std::unordered_map<TextureType, std::shared_ptr<Texture>> m_Textures;
 };

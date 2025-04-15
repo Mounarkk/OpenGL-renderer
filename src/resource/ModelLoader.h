@@ -14,11 +14,11 @@
 
 class ModelLoader {
 public:
-  static Entity load(Scene &scene, const std::string &path);
+  static Entity load(Scene &scene, std::string &path);
 
 private:
   static void processNode(const aiNode *node, const aiScene *aiScene,
-                          Scene &scene, Entity parent);
+                          Scene &scene, Entity parent, const std::string &path);
   static Entity processMesh(const aiMesh *mesh, const aiScene *aiScene,
-                            Scene &scene, Entity parent);
+                            Scene &scene, Entity parent, const std::string &path);
 };

@@ -18,6 +18,7 @@ Application::Application(const int width, const int height, std::string title)
 
 Application::~Application() {
   GLObjectDestroyer::getInstance().cleanupAll();
+  glfwDestroyWindow(m_Window);
   glfwTerminate();
 }
 
@@ -68,9 +69,10 @@ void Application::Initialize() {
   // Enable debug out put
   enableGLDebugging();
 
-  // Initialize scene TODO: Initialize a scene bro
+  // Initialize scene
   // TODO: Default scene here
-  ModelLoader::load(m_Scene, "../res/models/backpack/backpack.obj");
+  std::string backpackPath = "../res/models/backpack/backpack.obj";
+  ModelLoader::load(m_Scene, backpackPath);
 }
 
 void Application::Run() {
