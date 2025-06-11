@@ -16,11 +16,11 @@ enum class TextureType {
 
 class Material {
 public:
-  explicit Material(const std::shared_ptr<Shader> &shader);
+  Material() = default;
   ~Material();
   void clean();
 
-  void bind() const;
+  void bind(const std::shared_ptr<Shader> &shader) const;
 
   // Set PBR parameters
   void setAlbedo(const glm::vec3 &albedo);
@@ -29,11 +29,7 @@ public:
 
   // Set textures
   void setTexture(TextureType type, const std::shared_ptr<Texture> &texture);
-
-  std::shared_ptr<Shader> getShader() const;
-
 private:
-  std::shared_ptr<Shader> mShader;
   glm::vec3 mAlbedo = {1.0f, 1.0f, 1.0f}; // Base color
   float mMetallic = 0.0f;  // Metallic factor (0 = dielectric, 1 = metal)
   float mRoughness = 0.5f; // Roughness factor (0 = smooth, 1 = rough)

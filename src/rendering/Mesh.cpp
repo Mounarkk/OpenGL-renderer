@@ -33,7 +33,7 @@ Mesh::~Mesh() {
 
 
 void Mesh::draw() const {
-  mMaterial->bind();
+  //mMaterial->bind();
   mVAO->bind();
   mVBO->Bind();
   mIBO->bind();
@@ -42,7 +42,7 @@ void Mesh::draw() const {
 }
 
 void Mesh::clean() {
-  // Only cleans VAO, VBO and IBO, textures and shaders will be cleaned afterward
+  // Only cleans VAO, VBO and IBO; textures and shaders will be cleaned afterward
   mVAO->clean();
   mVBO->clean();
   mIBO->clean();

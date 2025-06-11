@@ -8,9 +8,7 @@ std::unordered_map<std::string, std::weak_ptr<Shader>>
 std::shared_ptr<Material>
 ResourceManager::loadMaterial(const aiMaterial *aiMaterial, const std::string &path) {
   // Create a new material
-  // TODO: Load default shaders here, and they don't exist
-  auto material = std::make_shared<Material>(
-      loadShader("../res/shaders/textured_cube_shader.vert", "../res/shaders/textured_cube_shader.frag"));
+  auto material = std::make_shared<Material>();
 
   // Load textures
   const auto diffuseTextures =

@@ -44,5 +44,5 @@ private:
 
   // Scene and systems
   Scene m_Scene;
-  Renderer m_Renderer;
+  std::unique_ptr<Renderer> m_Renderer;
 };

@@ -43,8 +43,11 @@ set(SOURCES
         src/gl/Texture.cpp
         src/gl/Debug.cpp
         src/gl/GLObjectDestroyer.cpp
+        src/gl/FrameBuffer.cpp
         src/rendering/Mesh.cpp
         src/rendering/Material.cpp
+        src/rendering/RenderPass.h
+        src/rendering/RenderPass.cpp
         src/rendering/Renderer.cpp
         src/resource/ModelLoader.cpp
         src/resource/ResourceManager.cpp

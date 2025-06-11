@@ -43,6 +43,9 @@ struct SpotLight {
    vec3 specular;
 };
 
+float near = 0.1;
+float far = 100;
+
 #define NB_POINT_LIGHTS 4
 
 uniform Material uMaterial;
@@ -52,6 +55,8 @@ uniform SpotLight uSpotLight;
 uniform vec3 objectColor;
 uniform vec3 viewPos;
 
+
+float LinearizeDepthValue(float z);
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
@@ -76,6 +81,15 @@ void main() {
 
    // emission map
    //vec3 emission = vec3(texture(uMaterial.emission, TexCoords));
+}
+
+// To see what the depth buffer looks like
+float LinearizeDepthValue(float z) {
+   float ndc = z * 2.0 - 1.0;
+   float linearDepth = (2.0 * near * far) / (far + near - ndc * (far - near));
+   linearDepth = linearDepth / far;
+
+   return linearDepth;
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {

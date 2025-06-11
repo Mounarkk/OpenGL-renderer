@@ -40,7 +40,7 @@ void Application::Initialize() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-  // Create window
+  // Create a window
   m_Window =
       glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
   if (!m_Window) {
@@ -64,8 +64,11 @@ void Application::Initialize() {
     return;
   }
 
+  m_Renderer = std::make_unique<Renderer>();
+
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
+
   // Enable debug out put
   enableGLDebugging();
 
@@ -130,7 +133,7 @@ void Application::Render() {
   RenderingSystem::onUpdate(m_Scene);
 
   // Flush render commands
-  Renderer::flush(projection * view);
+  m_Renderer->flush(projection * view);
 }
 
 // Static callbacks

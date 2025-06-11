@@ -1,20 +1,16 @@
 #pragma once
-#include "../scene/Components.h"
-#include "Material.h"
-#include "Mesh.h"
-
-struct RenderCommand {
-  Transform transform;
-  std::shared_ptr<Mesh> mesh;
-  std::shared_ptr<Material> material;
-};
+#include "RenderPass.h"
 
 class Renderer {
 public:
+  Renderer();
+  ~Renderer();
   static void clear();
   static void submit(const RenderCommand &command);
-  static void flush(const glm::mat4 &viewProj);
-
+  void flush(const glm::mat4 &viewProj) const;
+  void cleanup() const;
+  void resize(int width, int height) const;
 private:
   static std::vector<RenderCommand> s_CommandQueue;
+  std::vector<RenderPass*> mRenderPasses;
 };

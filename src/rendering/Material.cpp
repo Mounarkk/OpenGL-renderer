@@ -1,16 +1,10 @@
 #include "Material.h"
 
-Material::Material(const std::shared_ptr<Shader> &shader) : mShader(shader) {}
-
 Material::~Material() {
   clean();
 }
 
 void Material::clean() {
-  if (mShader) {
-    mShader->clean();
-  }
-
   for (auto& [key, texture] : m_Textures) {
     if (texture) {
       texture->clean();
@@ -20,14 +14,12 @@ void Material::clean() {
 
 
 
-void Material::bind() const {
-  mShader->use();
-
+void Material::bind(const std::shared_ptr<Shader> &shader) const {
   // Bind PBR parameters
-  mShader->setVec3("uMaterial.albedo", mAlbedo);
-  mShader->setFloat("uMaterial.metallic", mMetallic);
-  mShader->setFloat("uMaterial.roughness", mRoughness);
-  mShader->setFloat("uMaterial.shininess", mShininess);
+  shader->setVec3("uMaterial.albedo", mAlbedo);
+  shader->setFloat("uMaterial.metallic", mMetallic);
+  shader->setFloat("uMaterial.roughness", mRoughness);
+  shader->setFloat("uMaterial.shininess", mShininess);
 
   // Bind textures
   int textureSlot = 0;
@@ -37,25 +29,25 @@ void Material::bind() const {
     // Set texture uniforms (e.g., "uMaterial.albedoMap")
     switch (type) {
     case TextureType::Albedo:
-      mShader->setInt("uMaterial.albedoMap", textureSlot);
+      shader->setInt("uMaterial.albedoMap", textureSlot);
       break;
     case TextureType::Specular:
-      mShader->setInt("uMaterial.specularMap", textureSlot);
+      shader->setInt("uMaterial.specularMap", textureSlot);
       break;
     case TextureType::Normal:
-      mShader->setInt("uMaterial.normalMap", textureSlot);
+      shader->setInt("uMaterial.normalMap", textureSlot);
       break;
     case TextureType::Metallic:
-      mShader->setInt("uMaterial.metallicMap", textureSlot);
+      shader->setInt("uMaterial.metallicMap", textureSlot);
       break;
     case TextureType::Roughness:
-      mShader->setInt("uMaterial.roughnessMap", textureSlot);
+      shader->setInt("uMaterial.roughnessMap", textureSlot);
       break;
     case TextureType::AmbientOcclusion:
-      mShader->setInt("uMaterial.aoMap", textureSlot);
+      shader->setInt("uMaterial.aoMap", textureSlot);
       break;
     case TextureType::Emissive:
-      mShader->setInt("uMaterial.emissiveMap", textureSlot);
+      shader->setInt("uMaterial.emissiveMap", textureSlot);
       break;
     }
 
@@ -73,5 +65,3 @@ void Material::setTexture(const TextureType type,
                           const std::shared_ptr<Texture> &texture) {
   m_Textures[type] = texture;
 }
-
-std::shared_ptr<Shader> Material::getShader() const { return mShader; }
