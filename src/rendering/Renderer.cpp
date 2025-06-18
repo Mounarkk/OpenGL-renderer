@@ -32,15 +32,15 @@ void Renderer::submit(const RenderCommand &command) {
   s_CommandQueue.push_back(command);
 }
 
-void Renderer::flush(const glm::mat4 &viewProj) const {
+void Renderer::flush(const glm::mat4 &projMat, const glm::mat4 &viewMat) const {
   // Sort by material to minimize state changes
   std::sort(s_CommandQueue.begin(), s_CommandQueue.end(),
             [](const RenderCommand &a, const RenderCommand &b) {
               return a.material < b.material;
             });
 
-  for (int i = 0; i < mRenderPasses.size(); i++) {
-    mRenderPasses[i]->execute(s_CommandQueue, viewProj);
+  for (const auto mRenderPasse : mRenderPasses) {
+    mRenderPasse->execute(s_CommandQueue, projMat, viewMat);
   }
 
   s_CommandQueue.clear();

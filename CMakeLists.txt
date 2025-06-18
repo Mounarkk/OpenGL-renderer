@@ -57,6 +57,8 @@ set(SOURCES
         src/systems/RenderingSystem.h
         src/rendering/LightManager.cpp
         src/application/Application.cpp
+        src/rendering/Skybox.cpp
+        src/rendering/Skybox.h
 )
 
 # Create Executable

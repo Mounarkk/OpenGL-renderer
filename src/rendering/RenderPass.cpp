@@ -7,16 +7,18 @@ ForwardRenderPass::ForwardRenderPass(const std::string &vertexPath,
                                      const int width, const int height) {
   mShader = std::make_unique<Shader>(vertexPath, fragmentPath);
   mFBO = std::make_unique<FrameBuffer>(width, height);
+  mSkybox = std::make_unique<Skybox>();
 }
 
-void ForwardRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &viewProj) {
+void ForwardRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) {
+
   // Set up the pass
   mFBO->bind();
   glEnable(GL_DEPTH_TEST);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   mShader->use();
-  mShader->setMat4("uViewProj", viewProj);
+  mShader->setMat4("uViewProj", projMat * viewMat);
   LightManager::getInstance().bindLights(mShader);
 
   // Batch draw calls
@@ -25,6 +27,9 @@ void ForwardRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue, cons
     mShader->setMat4("uModel", transform.getWorldMatrix());
     mesh->draw();
   }
+
+  // Render the skybox
+  mSkybox->render(projMat, viewMat);
 
   mFBO->unbind();
 }
@@ -57,10 +62,11 @@ FinalRenderPass::FinalRenderPass(const std::string &vertexPath,
 }
 
 void FinalRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue,
-                              const glm::mat4 &viewProj) {
+                              const glm::mat4 &projMat, const glm::mat4 &viewMat) {
   // Don't use the command queue/projection matrix
   (void)s_CommandQueue;
-  (void)viewProj;
+  (void)projMat;
+  (void)viewMat;
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDisable(GL_DEPTH_TEST);
@@ -98,7 +104,7 @@ void FinalRenderPass::setupQuad() {
      1.0f,  1.0f,  1.0f, 1.0f
 };
 
-  mQuadVBO = std::make_unique<VertexBuffer>(quadVertices, 24 * sizeof(float));
+  mQuadVBO = std::make_unique<VertexBuffer>(quadVertices, sizeof(quadVertices));
 
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 2);

@@ -133,7 +133,7 @@ void Application::Render() {
   RenderingSystem::onUpdate(m_Scene);
 
   // Flush render commands
-  m_Renderer->flush(projection * view);
+  m_Renderer->flush(projection, view);
 }
 
 // Static callbacks
