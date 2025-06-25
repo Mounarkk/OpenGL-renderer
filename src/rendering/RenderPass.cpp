@@ -2,7 +2,7 @@
 #include "LightManager.h"
 
 
-ForwardRenderPass::ForwardRenderPass(const std::string &vertexPath,
+ForwardLightingPass::ForwardLightingPass(const std::string &vertexPath,
                                      const std::string &fragmentPath,
                                      const int width, const int height) {
   mShader = std::make_unique<Shader>(vertexPath, fragmentPath);
@@ -10,7 +10,7 @@ ForwardRenderPass::ForwardRenderPass(const std::string &vertexPath,
   mSkybox = std::make_unique<Skybox>();
 }
 
-void ForwardRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) {
+void ForwardLightingPass::execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) {
 
   // Set up the pass
   mFBO->bind();
@@ -34,26 +34,26 @@ void ForwardRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue, cons
   mFBO->unbind();
 }
 
-void ForwardRenderPass::cleanup() {
+void ForwardLightingPass::cleanup() {
   mFBO->clean();
   mShader->clean();
 }
 
-void ForwardRenderPass::resize(int width, int height) {
+void ForwardLightingPass::resize(int width, int height) {
   mFBO->clean();
   mFBO = std::make_unique<FrameBuffer>(width, height);
 }
 
-int ForwardRenderPass::getTextColorBufferID() const {
+int ForwardLightingPass::getTextColorBufferID() const {
   return mFBO->mTextureID;
 }
 
-ForwardRenderPass::~ForwardRenderPass() {
+ForwardLightingPass::~ForwardLightingPass() {
   cleanup();
 }
 
 
-FinalRenderPass::FinalRenderPass(const std::string &vertexPath,
+PostProcessingPass::PostProcessingPass(const std::string &vertexPath,
                                  const std::string &fragmentPath,
                                  const int texColorBufferID) {
   mTexColorBufferID = texColorBufferID;
@@ -61,7 +61,7 @@ FinalRenderPass::FinalRenderPass(const std::string &vertexPath,
   setupQuad();
 }
 
-void FinalRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue,
+void PostProcessingPass::execute(std::vector<RenderCommand> &s_CommandQueue,
                               const glm::mat4 &projMat, const glm::mat4 &viewMat) {
   // Don't use the command queue/projection matrix
   (void)s_CommandQueue;
@@ -86,13 +86,13 @@ void FinalRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue,
   VertexArray::unbind();
 }
 
-void FinalRenderPass::cleanup() {
+void PostProcessingPass::cleanup() {
   mQuadVAO->clean();
   mQuadVBO->clean();
   mShader->clean();
 }
 
-void FinalRenderPass::setupQuad() {
+void PostProcessingPass::setupQuad() {
   float quadVertices[] = {
     // positions   // texCoords
     -1.0f,  1.0f,  0.0f, 1.0f,
@@ -114,10 +114,10 @@ void FinalRenderPass::setupQuad() {
   mQuadVAO->addBuffer(*mQuadVBO, layout);
 }
 
-void FinalRenderPass::resize(const int width, const int height) { return; }
+void PostProcessingPass::resize(const int width, const int height) { return; }
 
 
-FinalRenderPass::~FinalRenderPass() {
+PostProcessingPass::~PostProcessingPass() {
   cleanup();
 }
 

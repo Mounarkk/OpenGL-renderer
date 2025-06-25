@@ -64,7 +64,7 @@ void Application::Initialize() {
     return;
   }
 
-  m_Renderer = std::make_unique<Renderer>();
+  m_Renderer = std::make_unique<ForwardRenderer>();
 
   // Enable depth testing
   glEnable(GL_DEPTH_TEST);
@@ -121,7 +121,7 @@ void Application::Update(const float deltaTime) {
 
 void Application::Render() {
   // Clear screen
-  Renderer::clear();
+  ForwardRenderer::clear();
 
   // Set camera matrices
   const glm::mat4 view = m_Camera.getViewMatrix();
@@ -130,7 +130,7 @@ void Application::Render() {
       static_cast<float>(m_Width) / static_cast<float>(m_Height), 0.1f, 100.0f);
 
   // Submit render commands
-  RenderingSystem::onUpdate(m_Scene);
+  m_Renderer->prepareCommandQueue(m_Scene);
 
   // Flush render commands
   m_Renderer->flush(projection, view);

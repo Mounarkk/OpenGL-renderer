@@ -20,15 +20,15 @@ public:
   virtual ~RenderPass() = default;
   virtual void execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) = 0;
   virtual void cleanup() = 0;
-  virtual void resize(const int width, const int height) = 0;
+  virtual void resize(int width, int height) = 0;
 protected:
   std::shared_ptr<Shader> mShader;
 };
 
-class ForwardRenderPass final : protected RenderPass {
+class ForwardLightingPass final : protected RenderPass {
 public:
-  ForwardRenderPass(const std::string &vertexPath, const std::string &fragmentPath, int width, int height);
-  ~ForwardRenderPass() override;
+  ForwardLightingPass(const std::string &vertexPath, const std::string &fragmentPath, int width, int height);
+  ~ForwardLightingPass() override;
 
   void execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) override;
   void cleanup() override;
@@ -40,10 +40,10 @@ private:
   std::unique_ptr<Skybox> mSkybox;
 };
 
-class FinalRenderPass final : protected RenderPass {
+class PostProcessingPass final : protected RenderPass {
 public:
-  FinalRenderPass(const std::string &vertexPath, const std::string &fragmentPath, int texColorBufferID);
-  ~FinalRenderPass() override;
+  PostProcessingPass(const std::string &vertexPath, const std::string &fragmentPath, int texColorBufferID);
+  ~PostProcessingPass() override;
 
   void execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) override;
   void cleanup() override;

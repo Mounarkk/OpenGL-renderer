@@ -48,17 +48,17 @@ set(SOURCES
         src/rendering/Material.cpp
         src/rendering/RenderPass.h
         src/rendering/RenderPass.cpp
+        src/rendering/RenderPass.h
         src/rendering/Renderer.cpp
+        src/rendering/Skybox.cpp
+        src/rendering/Skybox.h
         src/resource/ModelLoader.cpp
         src/resource/ResourceManager.cpp
         src/scene/Components.h
         src/scene/Entity.cpp
         src/scene/Scene.cpp
-        src/systems/RenderingSystem.h
         src/rendering/LightManager.cpp
         src/application/Application.cpp
-        src/rendering/Skybox.cpp
-        src/rendering/Skybox.h
 )
 
 # Create Executable
