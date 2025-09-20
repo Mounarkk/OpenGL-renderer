@@ -1,0 +1,24 @@
+# OpenGL Renderer Configuration
+# This file contains configuration settings for the renderer.
+# Lines starting with # are comments and are ignored.
+# Format: key = value
+
+# Window Settings
+window.width = 800
+window.height = 600
+
+# Renderer Settings
+renderer.vsync = true
+
+# Resource Paths
+# These paths are relative to the executable location
+paths.shaders = ../res/shaders/
+paths.models = ../res/models/
+paths.textures = ../res/textures/
+
+# Camera Settings
+camera.fov = 45.0
+camera.speed = 2.5
+camera.sensitivity = 0.1
+camera.near_plane = 0.1
+camera.far_plane = 100.0
