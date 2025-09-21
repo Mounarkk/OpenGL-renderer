@@ -4,7 +4,6 @@
 #include "../rendering/Renderer.h"
 #include "../scene/Camera.h"
 #include "../scene/Scene.h"
-#include "../systems/RenderingSystem.h"
 #include "../input/InputHandler.h"
 #include <GLFW/glfw3.h>
 
