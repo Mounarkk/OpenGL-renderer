@@ -2,7 +2,7 @@
 
 #include "../gl/Debug.h"
 #include "../gl/GLObjectDestroyer.h"
-#include "../resource/ModelLoader.h"
+#include "../resource/ResourceManager.h"
 
 #include <glad/glad.h>
 
@@ -105,7 +105,7 @@ void Application::Initialize() {
   // Initialize scene
   // TODO: Default scene here
   std::string backpackPath = Config::getModelPath() + "backpack/backpack.obj";
-  ModelLoader::load(m_Scene, backpackPath);
+  ResourceManager::loadModel(m_Scene, backpackPath);
 }
 
 void Application::Run() {

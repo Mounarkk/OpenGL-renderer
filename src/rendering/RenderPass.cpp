@@ -1,11 +1,12 @@
 #include "RenderPass.h"
 #include "LightManager.h"
+#include "../resource/ResourceManager.h"
 
 
 ForwardRenderPass::ForwardRenderPass(const std::string &vertexPath,
                                      const std::string &fragmentPath,
                                      const int width, const int height) {
-  mShader = std::make_unique<Shader>(vertexPath, fragmentPath);
+  mShader = ResourceManager::loadShader(vertexPath, fragmentPath);
   mFBO = std::make_unique<FrameBuffer>(width, height);
 }
 
@@ -31,7 +32,7 @@ void ForwardRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue, cons
 
 void ForwardRenderPass::cleanup() {
   mFBO->clean();
-  mShader->clean();
+  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup needed
 }
 
 void ForwardRenderPass::resize(int width, int height) {
@@ -52,7 +53,7 @@ FinalRenderPass::FinalRenderPass(const std::string &vertexPath,
                                  const std::string &fragmentPath,
                                  const int texColorBufferID) {
   mTexColorBufferID = texColorBufferID;
-  mShader = std::make_unique<Shader>(vertexPath, fragmentPath);
+  mShader = ResourceManager::loadShader(vertexPath, fragmentPath);
   setupQuad();
 }
 
@@ -83,7 +84,7 @@ void FinalRenderPass::execute(std::vector<RenderCommand> &s_CommandQueue,
 void FinalRenderPass::cleanup() {
   mQuadVAO->clean();
   mQuadVBO->clean();
-  mShader->clean();
+  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup needed
 }
 
 void FinalRenderPass::setupQuad() {
