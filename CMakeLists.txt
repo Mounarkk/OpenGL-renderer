@@ -288,6 +288,10 @@ elseif(APPLE)
     )
 else()
     # Linux-specific libraries
+    # Set OpenGL policy to prefer GLVND (modern OpenGL loader) over legacy
+    if(POLICY CMP0072)
+        cmake_policy(SET CMP0072 NEW)
+    endif()
     find_package(OpenGL REQUIRED)
     target_link_libraries(${PROJECT_NAME} ${OPENGL_LIBRARIES})
 endif()
