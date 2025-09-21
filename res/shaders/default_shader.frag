@@ -4,10 +4,12 @@ out vec4 FragColor;
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 TexCoords;
+in mat3 TBN;
 
 struct Material {
    sampler2D albedoMap;
    sampler2D specularMap;
+   sampler2D normalMap;
    //sampler2D emission;
    float shininess;
 };
@@ -63,7 +65,10 @@ vec3 CalcSpotLight(SpotLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main() {
    // properties
-   vec3 norm = normalize(Normal);
+   //vec3 norm = normalize(Normal);
+   vec3 norm = vec3(texture(uMaterial.normalMap, TexCoords));
+   norm = norm * 2 - 1.0;
+   norm = normalize(TBN * norm);
    vec3 viewDir = normalize(viewPos - FragPos);
 
    // phase 1 : Directional lighting

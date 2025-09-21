@@ -15,6 +15,7 @@ ResourceManager::loadMaterial(const aiMaterial *aiMaterial, const std::string &p
       loadMaterialTextures(aiMaterial, aiTextureType_DIFFUSE, path);
   const auto specularTextures =
       loadMaterialTextures(aiMaterial, aiTextureType_SPECULAR, path);
+  const auto normalTextures = loadMaterialTextures(aiMaterial, aiTextureType_HEIGHT, path);
 
   // Assign textures to material
   if (!diffuseTextures.empty()) {
@@ -22,6 +23,9 @@ ResourceManager::loadMaterial(const aiMaterial *aiMaterial, const std::string &p
   }
   if (!specularTextures.empty()) {
     material->setTexture(TextureType::Specular, specularTextures[0]);
+  }
+  if (!normalTextures.empty()) {
+    material->setTexture(TextureType::Normal, normalTextures[0]);
   }
 
   return material;
