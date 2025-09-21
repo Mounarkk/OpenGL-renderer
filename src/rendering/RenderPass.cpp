@@ -1,17 +1,18 @@
 #include "RenderPass.h"
-#include "LightManager.h"
 #include "../resource/ResourceManager.h"
-
+#include "LightManager.h"
 
 ForwardLightingPass::ForwardLightingPass(const std::string &vertexPath,
-                                     const std::string &fragmentPath,
-                                     const int width, const int height) {
+                                         const std::string &fragmentPath,
+                                         const int width, const int height) {
   mShader = ResourceManager::loadShader(vertexPath, fragmentPath);
   mFBO = std::make_unique<FrameBuffer>(width, height);
   mSkybox = std::make_unique<Skybox>();
 }
 
-void ForwardLightingPass::execute(std::vector<RenderCommand> &s_CommandQueue, const glm::mat4 &projMat, const glm::mat4 &viewMat) {
+void ForwardLightingPass::execute(std::vector<RenderCommand> &s_CommandQueue,
+                                  const glm::mat4 &projMat,
+                                  const glm::mat4 &viewMat) {
 
   // Set up the pass
   mFBO->bind();
@@ -37,7 +38,8 @@ void ForwardLightingPass::execute(std::vector<RenderCommand> &s_CommandQueue, co
 
 void ForwardLightingPass::cleanup() {
   mFBO->clean();
-  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup needed
+  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup
+  // needed
 }
 
 void ForwardLightingPass::resize(int width, int height) {
@@ -49,25 +51,18 @@ int ForwardLightingPass::getTextColorBufferID() const {
   return mFBO->mTextureID;
 }
 
-ForwardLightingPass::~ForwardLightingPass() {
-  cleanup();
-}
-
+ForwardLightingPass::~ForwardLightingPass() { cleanup(); }
 
 PostProcessingPass::PostProcessingPass(const std::string &vertexPath,
-                                 const std::string &fragmentPath,
-                                 const int texColorBufferID) {
+                                       const std::string &fragmentPath,
+                                       const int texColorBufferID) {
   mTexColorBufferID = texColorBufferID;
   mShader = ResourceManager::loadShader(vertexPath, fragmentPath);
   setupQuad();
 }
 
-void PostProcessingPass::execute(std::vector<RenderCommand> &s_CommandQueue,
-                              const glm::mat4 &projMat, const glm::mat4 &viewMat) {
-  // Don't use the command queue/projection matrix
-  (void)s_CommandQueue;
-  (void)projMat;
-  (void)viewMat;
+void PostProcessingPass::execute(std::vector<RenderCommand> &,
+                                 const glm::mat4 &, const glm::mat4 &) {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glDisable(GL_DEPTH_TEST);
@@ -90,20 +85,17 @@ void PostProcessingPass::execute(std::vector<RenderCommand> &s_CommandQueue,
 void PostProcessingPass::cleanup() {
   mQuadVAO->clean();
   mQuadVBO->clean();
-  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup needed
+  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup
+  // needed
 }
 
 void PostProcessingPass::setupQuad() {
-  float quadVertices[] = {
-    // positions   // texCoords
-    -1.0f,  1.0f,  0.0f, 1.0f,
-    -1.0f, -1.0f,  0.0f, 0.0f,
-     1.0f, -1.0f,  1.0f, 0.0f,
+  float quadVertices[] = {// positions   // texCoords
+                          -1.0f, 1.0f, 0.0f, 1.0f,  -1.0f, -1.0f,
+                          0.0f,  0.0f, 1.0f, -1.0f, 1.0f,  0.0f,
 
-    -1.0f,  1.0f,  0.0f, 1.0f,
-     1.0f, -1.0f,  1.0f, 0.0f,
-     1.0f,  1.0f,  1.0f, 1.0f
-};
+                          -1.0f, 1.0f, 0.0f, 1.0f,  1.0f,  -1.0f,
+                          1.0f,  0.0f, 1.0f, 1.0f,  1.0f,  1.0f};
 
   mQuadVBO = std::make_unique<VertexBuffer>(quadVertices, sizeof(quadVertices));
 
@@ -115,15 +107,8 @@ void PostProcessingPass::setupQuad() {
   mQuadVAO->addBuffer(*mQuadVBO, layout);
 }
 
-void PostProcessingPass::resize(const int width, const int height) { return; }
-
-
-PostProcessingPass::~PostProcessingPass() {
-  cleanup();
+void PostProcessingPass::resize(const int, const int) {
+  // Post-processing pass doesn't need to resize
 }
 
-
-
-
-
-
+PostProcessingPass::~PostProcessingPass() { cleanup(); }

@@ -14,14 +14,14 @@
 
 /**
  * Static utility class for loading 3D models from files using Assimp.
- * 
+ *
  * The ModelLoader class provides functionality to load complex 3D models
  * from various file formats (OBJ, FBX, GLTF, etc.) and convert them into
  * the engine's entity-component representation. It handles the complete
  * loading pipeline: parsing the file, extracting meshes and materials,
  * loading textures, and creating the appropriate entities and components
  * in the scene.
- * 
+ *
  * Key features:
  * - Support for multiple 3D file formats via Assimp
  * - Automatic mesh and material extraction
@@ -52,7 +52,7 @@ private:
    */
   static void processNode(const aiNode *node, const aiScene *aiScene,
                           Scene &scene, Entity parent, const std::string &path);
-  
+
   /**
    * Processes a single mesh from the Assimp scene.
    * Extracts vertex data, creates materials, and sets up the mesh entity.
@@ -64,5 +64,6 @@ private:
    * @return Entity representing the processed mesh
    */
   static Entity processMesh(const aiMesh *mesh, const aiScene *aiScene,
-                            Scene &scene, Entity parent, const std::string &path);
+                            Scene &scene, Entity parent,
+                            const std::string &path);
 };

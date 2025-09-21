@@ -1,6 +1,6 @@
 #include "./application/Application.h"
-#include "./core/RendererException.h"
 #include "./core/Logger.h"
+#include "./core/RendererException.h"
 
 int main() {
   try {
@@ -8,7 +8,7 @@ int main() {
     Application app("OpenGL Renderer");
     app.Run();
     return 0;
-  } catch (const RendererException& e) {
+  } catch (const RendererException &e) {
     // Handle renderer-specific exceptions with detailed error information
     if (Logger::get()) {
       Logger::get()->critical("Renderer initialization failed: {}", e.what());
@@ -17,7 +17,7 @@ int main() {
       std::cerr << "Critical Error: " << e.what() << std::endl;
     }
     return -1;
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     // Handle any other standard exceptions
     if (Logger::get()) {
       Logger::get()->critical("Unexpected error: {}", e.what());

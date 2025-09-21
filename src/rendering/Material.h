@@ -5,27 +5,27 @@
 #include <unordered_map>
 
 /**
- * Types of textures that can be used in PBR (Physically Based Rendering) materials.
- * Each type serves a specific purpose in the rendering equation.
+ * Types of textures that can be used in PBR (Physically Based Rendering)
+ * materials. Each type serves a specific purpose in the rendering equation.
  */
 enum class TextureType {
-  Albedo,            // Base color/diffuse texture
-  Specular,          // Specular reflection texture 
-  Normal,            // Normal map for surface detail
-  Metallic,          // Metallic/non-metallic mask
-  Roughness,         // Surface roughness texture
-  AmbientOcclusion,  // Ambient occlusion for shadowing
-  Emissive           // Self-illumination texture
+  Albedo,           // Base color/diffuse texture
+  Specular,         // Specular reflection texture
+  Normal,           // Normal map for surface detail
+  Metallic,         // Metallic/non-metallic mask
+  Roughness,        // Surface roughness texture
+  AmbientOcclusion, // Ambient occlusion for shadowing
+  Emissive          // Self-illumination texture
 };
 
 /**
  * Material system for managing surface properties and textures.
- * 
+ *
  * The Material class encapsulates all surface properties needed for realistic
  * rendering, including both PBR (Physically Based Rendering) parameters and
  * texture maps. It provides a unified interface for setting material properties
  * and automatically binds textures and uniforms to shaders during rendering.
- * 
+ *
  * Key features:
  * - PBR material parameters (albedo, metallic, roughness)
  * - Multi-texture support for detailed surface representation
@@ -39,12 +39,12 @@ public:
    * Default constructor that initializes material with default PBR values.
    */
   Material() = default;
-  
+
   /**
    * Destructor that cleans up material resources.
    */
   ~Material();
-  
+
   /**
    * Manually cleans up material resources.
    * Called automatically by destructor.
@@ -59,22 +59,23 @@ public:
   void bind(const std::shared_ptr<Shader> &shader) const;
 
   // PBR (Physically Based Rendering) parameter setters
-  
+
   /**
    * Sets the base color (albedo) of the material.
    * @param albedo RGB color values in linear space (0.0 to 1.0)
    */
   void setAlbedo(const glm::vec3 &albedo);
-  
+
   /**
    * Sets the metallic factor of the material.
    * @param metallic Metallic value (0.0 = dielectric, 1.0 = metallic)
    */
   void setMetallic(float metallic);
-  
+
   /**
    * Sets the roughness factor of the material.
-   * @param roughness Roughness value (0.0 = mirror smooth, 1.0 = completely rough)
+   * @param roughness Roughness value (0.0 = mirror smooth, 1.0 = completely
+   * rough)
    */
   void setRoughness(float roughness);
 
@@ -84,6 +85,7 @@ public:
    * @param texture Shared pointer to the texture resource
    */
   void setTexture(TextureType type, const std::shared_ptr<Texture> &texture);
+
 private:
   glm::vec3 mAlbedo = {1.0f, 1.0f, 1.0f}; // Base color
   float mMetallic = 0.0f;  // Metallic factor (0 = dielectric, 1 = metal)

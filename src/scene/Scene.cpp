@@ -9,7 +9,6 @@ Entity Scene::createEntity(const std::string &name) {
 
 entt::registry &Scene::getRegistry() { return m_Registry; };
 
-
 void Scene::onUpdate(float dt) {
   // Example: Update all entities with Transform and MeshRenderer components
   const auto view = m_Registry.view<Transform, MeshRenderer>();
@@ -17,9 +16,6 @@ void Scene::onUpdate(float dt) {
     auto &transform = view.get<Transform>(entity);
     auto &meshRenderer = view.get<MeshRenderer>(entity);
 
-    // Update logic here (e.g., update transform, render mesh)
-    // TODO: some logic will be implemented here
+    // Update logic for entities (currently no per-frame updates needed)
   }
 }
-
-

@@ -4,9 +4,9 @@
 
 class GLObjectDestroyer {
 public:
-  static GLObjectDestroyer& getInstance();
+  static GLObjectDestroyer &getInstance();
 
-  void registerMesh(const std::shared_ptr<Mesh>& mesh);
+  void registerMesh(const std::shared_ptr<Mesh> &mesh);
 
   void cleanupAll();
 
@@ -15,8 +15,8 @@ private:
   ~GLObjectDestroyer() = default;
 
   // No copying or assignment
-  GLObjectDestroyer(const GLObjectDestroyer&) = delete;
-  GLObjectDestroyer& operator=(const GLObjectDestroyer&) = delete;
+  GLObjectDestroyer(const GLObjectDestroyer &) = delete;
+  GLObjectDestroyer &operator=(const GLObjectDestroyer &) = delete;
 
   std::vector<std::shared_ptr<Mesh>> mMeshes;
 };

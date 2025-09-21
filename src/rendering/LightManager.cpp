@@ -1,7 +1,7 @@
 #include "LightManager.h"
 #define DEFAULT_NB_POINT_LIGHTS 4
 
-LightManager& LightManager::getInstance() {
+LightManager &LightManager::getInstance() {
   static LightManager instance; // Thread-safe, one-time init
   return instance;
 }
@@ -10,8 +10,8 @@ LightManager::LightManager() {
 
   // Point lights parameters
   constexpr glm::vec3 pointLightPositions[DEFAULT_NB_POINT_LIGHTS] = {
-    glm::vec3(0.7f, 0.2f, 2.0f), glm::vec3(2.3f, -3.3f, -4.0f),
-    glm::vec3(-4.0f, 2.0f, -12.0f), glm::vec3(0.0f, 0.0f, -3.0f)};
+      glm::vec3(0.7f, 0.2f, 2.0f), glm::vec3(2.3f, -3.3f, -4.0f),
+      glm::vec3(-4.0f, 2.0f, -12.0f), glm::vec3(0.0f, 0.0f, -3.0f)};
 
   for (auto pointLightPosition : pointLightPositions) {
     PointLight pointLight;
@@ -41,7 +41,8 @@ void LightManager::bindLights(const std::shared_ptr<Shader> &shader) const {
     shader->setVec3(oss.str() + ".specular", mLights.pointLights[i].specular);
     shader->setFloat(oss.str() + ".constant", mLights.pointLights[i].constant);
     shader->setFloat(oss.str() + ".linear", mLights.pointLights[i].linear);
-    shader->setFloat(oss.str() + ".quadratic", mLights.pointLights[i].quadratic);
+    shader->setFloat(oss.str() + ".quadratic",
+                     mLights.pointLights[i].quadratic);
   }
 
   // Bind spotlights
@@ -53,4 +54,3 @@ void LightManager::bindLights(const std::shared_ptr<Shader> &shader) const {
   shader->setFloat("uSpotLight.cutOff", mLights.spotLight.cutOff);
   shader->setFloat("uSpotLight.outerCutOff", mLights.spotLight.outerCutOff);
 }
-

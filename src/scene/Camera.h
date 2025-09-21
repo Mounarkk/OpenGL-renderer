@@ -10,21 +10,22 @@
 enum ProcessKeyboard { FORWARD, BACKWARD, LEFT, RIGHT };
 
 // Default camera configuration values
-constexpr float YAW = -90.0f;        // Default yaw angle (looking down negative Z-axis)
-constexpr float PITCH = 0.0f;        // Default pitch angle (level horizon)
-constexpr float SPEED = 2.5f;        // Default movement speed (units per second)
-constexpr float SENSITIVITY = 0.1f;  // Default mouse sensitivity
-constexpr float ZOOM = 45.0f;        // Default field of view in degrees
+constexpr float YAW =
+    -90.0f; // Default yaw angle (looking down negative Z-axis)
+constexpr float PITCH = 0.0f;       // Default pitch angle (level horizon)
+constexpr float SPEED = 2.5f;       // Default movement speed (units per second)
+constexpr float SENSITIVITY = 0.1f; // Default mouse sensitivity
+constexpr float ZOOM = 45.0f;       // Default field of view in degrees
 
 /**
  * First-person camera implementation using Euler angles.
- * 
+ *
  * This camera class provides a complete first-person camera system suitable
  * for 3D applications. It handles mouse look controls, keyboard movement,
  * and generates the appropriate view matrices for rendering. The camera uses
  * Euler angles (yaw/pitch) for rotation, which is intuitive for FPS-style
  * controls but avoids gimbal lock by constraining pitch.
- * 
+ *
  * Key features:
  * - First-person mouse look controls with pitch constraints
  * - WASD-style keyboard movement in world space
@@ -57,11 +58,11 @@ public:
   explicit Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
                   glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
                   float pitch = PITCH);
-  
+
   /**
    * Constructs a camera with scalar parameters.
    * @param posX Initial X position
-   * @param posY Initial Y position  
+   * @param posY Initial Y position
    * @param posZ Initial Z position
    * @param upX World up vector X component
    * @param upY World up vector Y component
@@ -83,7 +84,8 @@ public:
    * Processes keyboard input for camera movement.
    * Moves the camera in the appropriate direction based on current orientation.
    * @param direction Movement direction (FORWARD, BACKWARD, LEFT, RIGHT)
-   * @param deltaTime Time elapsed since last frame (for frame-rate independent movement)
+   * @param deltaTime Time elapsed since last frame (for frame-rate independent
+   * movement)
    */
   void processKeyboard(ProcessKeyboard direction, float deltaTime);
 
@@ -92,7 +94,8 @@ public:
    * Updates yaw and pitch based on mouse movement offsets.
    * @param xOffset Mouse movement in X direction (horizontal)
    * @param yOffset Mouse movement in Y direction (vertical)
-   * @param constrainPitch Whether to limit pitch to prevent camera flipping (default: true)
+   * @param constrainPitch Whether to limit pitch to prevent camera flipping
+   * (default: true)
    */
   void processMouseMovement(float xOffset, float yOffset,
                             GLboolean constrainPitch = true);
@@ -100,7 +103,8 @@ public:
   /**
    * Processes mouse scroll input for zoom control.
    * Adjusts the field of view to create a zoom effect.
-   * @param yOffset Scroll wheel offset (positive = zoom in, negative = zoom out)
+   * @param yOffset Scroll wheel offset (positive = zoom in, negative = zoom
+   * out)
    */
   void processMouseScroll(float yOffset);
 
@@ -112,4 +116,3 @@ private:
    */
   void updateCameraVectors();
 };
-

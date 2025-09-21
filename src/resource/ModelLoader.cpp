@@ -6,13 +6,14 @@
 Entity ModelLoader::load(Scene &scene, std::string &path) {
   Assimp::Importer importer;
   const aiScene *aiScene =
-      importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs
-        | aiProcess_CalcTangentSpace);
+      importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
+                                  aiProcess_CalcTangentSpace);
 
   if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !aiScene->mRootNode) {
     Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    throw ResourceException(path, "Assimp loading failed: " + std::string(importer.GetErrorString()));
+    throw ResourceException(path, "Assimp loading failed: " +
+                                      std::string(importer.GetErrorString()));
   }
 
   // Get the object path
@@ -27,16 +28,17 @@ Entity ModelLoader::load(Scene &scene, std::string &path) {
 }
 
 void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
-                              Scene &scene, Entity parent, const std::string &path) {
+                              Scene &scene, Entity parent,
+                              const std::string &path) {
   // Create an entity for this node
   Entity entity = scene.createEntity(node->mName.C_Str());
-  // TODO: Default transform given here
+  // Add default transform component
   entity.addComponent<Transform>();
 
   // Process meshes
   for (unsigned i = 0; i < node->mNumMeshes; i++) {
     aiMesh *mesh = aiScene->mMeshes[node->mMeshes[i]];
-    // TODO: Maybe make a parent-child relationship system via Entt ?
+    // Process mesh for this node
     processMesh(mesh, aiScene, scene, entity, path);
   }
 
@@ -47,7 +49,8 @@ void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
 }
 
 Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
-                                Scene &scene, Entity parent, const std::string &path) {
+                                Scene &scene, Entity parent,
+                                const std::string &path) {
   // Convert Assimp mesh to our Mesh class
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
@@ -93,7 +96,7 @@ Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
   GLObjectDestroyer::getInstance().registerMesh(myMesh);
 
   Entity meshEntity = scene.createEntity(mesh->mName.C_Str());
-  // TODO: Default transform given here
+  // Add default transform component
   meshEntity.addComponent<Transform>();
   meshEntity.addComponent<MeshRenderer>(myMesh, material);
   return meshEntity;

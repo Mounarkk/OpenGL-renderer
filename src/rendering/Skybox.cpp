@@ -8,14 +8,9 @@
 
 Skybox::Skybox() {
   // Loading the appropriate textures and their parameters
-  const std::vector<std::string> faces = {
-    "right.jpg",
-    "left.jpg",
-    "top.jpg",
-    "bottom.jpg",
-    "front.jpg",
-    "back.jpg"
-  };
+  const std::vector<std::string> faces = {"right.jpg", "left.jpg",
+                                          "top.jpg",   "bottom.jpg",
+                                          "front.jpg", "back.jpg"};
 
   mCubeMapTexID = 0;
   glGenTextures(1, &mCubeMapTexID);
@@ -25,12 +20,15 @@ Skybox::Skybox() {
   int width, height, channels;
   auto resourcePath = "../res/skyboxes/arctic/";
   for (int i = 0; i < faces.size(); i++) {
-    unsigned char* data = stbi_load( (resourcePath + faces[i]).c_str(), &width, &height, &channels, 0);
+    unsigned char *data = stbi_load((resourcePath + faces[i]).c_str(), &width,
+                                    &height, &channels, 0);
     if (data) {
-      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+      glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height,
+                   0, GL_RGB, GL_UNSIGNED_BYTE, data);
       stbi_image_free(data);
     } else {
-      Logger::get()->error("Failed to load texture: {}", resourcePath + faces[i]);
+      Logger::get()->error("Failed to load texture: {}",
+                           resourcePath + faces[i]);
     }
   }
 
@@ -42,49 +40,24 @@ Skybox::Skybox() {
 
   // Set up the cube data
   float skyboxVertices[] = {
-    // positions
-    -1.0f,  1.0f, -1.0f,
-    -1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
+      // positions
+      -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+      1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
 
-    -1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f, -1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
+      -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
+      -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
 
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
+      1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
 
-    -1.0f, -1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f,
-    -1.0f, -1.0f,  1.0f,
+      -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
 
-    -1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f, -1.0f,
-     1.0f,  1.0f,  1.0f,
-     1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f,  1.0f,
-    -1.0f,  1.0f, -1.0f,
+      -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
+      1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
 
-    -1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f, -1.0f,
-     1.0f, -1.0f, -1.0f,
-    -1.0f, -1.0f,  1.0f,
-     1.0f, -1.0f,  1.0f
-  };
+      -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+      1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
 
   mVBO = std::make_unique<VertexBuffer>(skyboxVertices, sizeof(skyboxVertices));
 
@@ -95,7 +68,8 @@ Skybox::Skybox() {
   mVAO->addBuffer(*mVBO, layout);
 
   // Load the associated shader
-  mSkyboxShader = std::make_unique<Shader>("../res/shaders/skybox.vert", "../res/shaders/skybox.frag");
+  mSkyboxShader = std::make_unique<Shader>("../res/shaders/skybox.vert",
+                                           "../res/shaders/skybox.frag");
 }
 
 void Skybox::render(const glm::mat4 &projMat, const glm::mat4 &viewMat) const {
@@ -129,11 +103,4 @@ void Skybox::clean() {
   }
 }
 
-Skybox::~Skybox() {
-  clean();
-}
-
-
-
-
-
+Skybox::~Skybox() { clean(); }

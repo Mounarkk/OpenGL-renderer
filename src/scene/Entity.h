@@ -8,20 +8,26 @@ class Scene; // Forward declaration
 
 /**
  * Entity wrapper for the ECS (Entity-Component-System) architecture.
- * 
+ *
  * The Entity class provides a convenient wrapper around EnTT entity handles,
  * offering a more intuitive interface for working with entities and their
  * components. It maintains a reference to the scene that owns the entity
  * and provides type-safe methods for component manipulation. This class
  * follows the handle pattern, where the actual entity data is stored in
  * the scene's registry.
- * 
+ *
  * Key features:
  * - Type-safe component addition and retrieval
  * - Automatic scene registry management
  * - Lightweight handle-based design
  * - Integration with EnTT's efficient ECS implementation
  * - Convenient interface for common entity operations
+ *
+ * Ownership Patterns:
+ * - Does NOT own the Scene (uses raw pointer for non-owning reference)
+ * - Scene owns the entity data through EnTT registry
+ * - Entity is a lightweight handle that can be copied safely
+ * - Components are owned by the Scene's registry, not the Entity
  */
 class Entity {
 public:
@@ -30,7 +36,7 @@ public:
    * @param handle EnTT entity handle
    * @param scene Pointer to the scene that owns this entity
    */
-  Entity(entt::entity handle, Scene* scene);
+  Entity(entt::entity handle, Scene *scene);
 
   /**
    * Adds a component to this entity with the specified constructor arguments.
@@ -39,9 +45,9 @@ public:
    * @param args Arguments to forward to the component constructor
    * @return Reference to the newly created component
    */
-  template <typename T, typename... Args>
-  T& addComponent(Args&&... args) {
-    return mScene->getRegistry().emplace<T>(mHandle, std::forward<Args>(args)...);
+  template <typename T, typename... Args> T &addComponent(Args &&...args) {
+    return mScene->getRegistry().emplace<T>(mHandle,
+                                            std::forward<Args>(args)...);
   }
 
   /**
@@ -49,8 +55,7 @@ public:
    * @tparam T Component type to retrieve
    * @return Reference to the component (throws if component doesn't exist)
    */
-  template <typename T>
-  T& getComponent() {
+  template <typename T> T &getComponent() {
     return mScene->getRegistry().get<T>(mHandle);
   }
 
@@ -65,14 +70,14 @@ public:
    * @return EnTT entity handle for advanced operations
    */
   [[nodiscard]] entt::entity handle() const { return mHandle; }
-  
+
   /**
    * Gets the scene that owns this entity.
    * @return Pointer to the owning scene
    */
-  [[nodiscard]] Scene* scene() const { return mScene; }
+  [[nodiscard]] Scene *scene() const { return mScene; }
 
 private:
   entt::entity mHandle;
-  Scene* mScene;
+  Scene *mScene;
 };

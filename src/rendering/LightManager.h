@@ -2,8 +2,10 @@
 #include "../gl/Shader.h"
 #include "../scene/Components.h"
 
-// TODO: All values are initialized to default ones, have to make a system to
-// that they can be changed
+/**
+ * Directional light structure with default lighting values.
+ * These values provide good general-purpose lighting for most scenes.
+ */
 struct DirectionalLight {
   glm::vec3 direction = {-0.2f, -1.0f, -0.3f};
 
@@ -45,17 +47,17 @@ struct LightData {
 class LightManager {
 public:
   [[nodiscard]] LightData getLights();
-  void bindLights(const std::shared_ptr<Shader>& shader) const;
+  void bindLights(const std::shared_ptr<Shader> &shader) const;
 
-  static LightManager& getInstance();
+  static LightManager &getInstance();
+
 private:
   LightManager();
   ~LightManager() = default;
 
   // No copying or assignment
-  LightManager(const LightManager&) = delete;
-  LightManager& operator=(const LightManager&) = delete;
+  LightManager(const LightManager &) = delete;
+  LightManager &operator=(const LightManager &) = delete;
 
   LightData mLights;
 };
-

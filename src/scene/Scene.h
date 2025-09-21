@@ -6,12 +6,12 @@ class Entity; // Forward declaration
 
 /**
  * Manages the game world using an Entity-Component-System (ECS) architecture.
- * 
+ *
  * The Scene class serves as the main container for all game objects (entities)
  * and their associated data (components). It uses the EnTT library to provide
  * efficient entity management and component storage. The scene handles entity
  * creation, component queries, and system updates.
- * 
+ *
  * Key responsibilities:
  * - Entity lifecycle management (creation, destruction)
  * - Component storage and efficient queries
@@ -45,10 +45,9 @@ public:
    * @tparam Component Types of components to query for
    * @return EnTT view containing all entities with the specified components
    */
-  template <typename... Component>
-  auto getAll() {
-      return m_Registry.view<Component...>();
-    }
+  template <typename... Component> auto getAll() {
+    return m_Registry.view<Component...>();
+  }
 
   /**
    * Updates all systems in the scene.

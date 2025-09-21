@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include "LightManager.h"
+#include <memory>
 
 Renderer::Renderer() {
   // Base renderer constructor - derived classes will set up their render passes
@@ -31,40 +32,46 @@ void Renderer::flush(const glm::mat4 &projMat, const glm::mat4 &viewMat) {
               return a.material < b.material;
             });
 
-  for (const auto mRenderPasse : mRenderPasses) {
-    mRenderPasse->execute(s_CommandQueue, projMat, viewMat);
+  for (const auto &renderPass : mRenderPasses) {
+    renderPass->execute(s_CommandQueue, projMat, viewMat);
   }
 
   s_CommandQueue.clear();
 }
 
 ForwardRenderer::ForwardRenderer() {
-  // Uses pointers to be able to apply polymorphism
-  const auto forward =
-      new ForwardLightingPass("../res/shaders/forward_shader.vert",
-                            "../res/shaders/forward_shader.frag", 800, 600);
-  const auto postProcessing =
-    new PostProcessingPass("../res/shaders/screen.vert", "../res/shaders/screen.frag", forward
-      ->getTextColorBufferID());
+  // Create render passes using smart pointers for automatic memory management
+  auto forward = std::make_unique<ForwardLightingPass>(
+      "../res/shaders/forward_shader.vert",
+      "../res/shaders/forward_shader.frag", 800, 600);
 
-  mRenderPasses.push_back(reinterpret_cast<RenderPass *>(forward));
-  mRenderPasses.push_back(reinterpret_cast<RenderPass *>(postProcessing));
+  // Get the texture ID before moving the forward pass
+  const int textColorBufferID = forward->getTextColorBufferID();
+
+  auto postProcessing = std::make_unique<PostProcessingPass>(
+      "../res/shaders/screen.vert", "../res/shaders/screen.frag",
+      textColorBufferID);
+
+  // Move the unique_ptrs into the render passes vector (cast to base class)
+  mRenderPasses.push_back(std::unique_ptr<RenderPass>(forward.release()));
+  mRenderPasses.push_back(
+      std::unique_ptr<RenderPass>(postProcessing.release()));
 }
 
-ForwardRenderer::~ForwardRenderer() {
-  cleanup();
-}
+ForwardRenderer::~ForwardRenderer() { cleanup(); }
 
 void Renderer::cleanup() const {
-  // Default implementation - can be empty or provide common cleanup logic
-  for (const auto& pass : mRenderPasses) {
+  // Clean up render pass resources (smart pointers handle memory automatically)
+  for (const auto &pass : mRenderPasses) {
     pass->cleanup();
   }
+  // Note: std::unique_ptr automatically deletes render passes when vector is
+  // destroyed
 }
 
 void Renderer::resize(int width, int height) const {
   // Default implementation
-  for (const auto& pass : mRenderPasses) {
+  for (const auto &pass : mRenderPasses) {
     pass->resize(width, height);
   }
 }

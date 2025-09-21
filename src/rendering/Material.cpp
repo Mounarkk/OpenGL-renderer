@@ -1,18 +1,14 @@
 #include "Material.h"
 
-Material::~Material() {
-  clean();
-}
+Material::~Material() { clean(); }
 
 void Material::clean() {
-  for (auto& [key, texture] : m_Textures) {
+  for (auto &[key, texture] : m_Textures) {
     if (texture) {
       texture->clean();
     };
   }
 }
-
-
 
 void Material::bind(const std::shared_ptr<Shader> &shader) const {
   // Bind PBR parameters
