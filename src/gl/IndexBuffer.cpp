@@ -6,9 +6,9 @@
 
 IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count)
     : mCount(count) {
-  glGenBuffers(1, &mRendererId);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(unsigned int), data, GL_STATIC_DRAW);
+  glGenBuffers(1, &mRendererId);                                                      // Generate a new EBO ID from OpenGL
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);                                 // Bind as the active element buffer
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(unsigned int), data, GL_STATIC_DRAW);  // Upload indices to GPU
 }
 
 IndexBuffer::~IndexBuffer() {
@@ -17,8 +17,8 @@ IndexBuffer::~IndexBuffer() {
 
 void IndexBuffer::clean() {
   if (mRendererId != 0 && glfwGetCurrentContext()) {
-    glDeleteBuffers(1, &mRendererId);
-    mRendererId = 0;
+    glDeleteBuffers(1, &mRendererId);  // Delete the EBO from GPU memory
+    mRendererId = 0;  // Mark as invalid to prevent double-deletion
   }
 }
 
@@ -43,9 +43,9 @@ IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
 }
 
 void IndexBuffer::bind() const {
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mRendererId);  // Make this EBO the active element buffer
 }
 
 void IndexBuffer::unbind() {
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);  // Unbind any EBO (bind to default state)
 }

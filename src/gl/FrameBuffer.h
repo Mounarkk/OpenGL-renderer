@@ -20,6 +20,22 @@
  * - Automatic renderbuffer creation for depth testing
  * - Easy binding/unbinding for render target switching
  * - Proper resource cleanup and error handling
+ * 
+ * Usage example:
+ * ```cpp
+ * // Create framebuffer for off-screen rendering
+ * FrameBuffer fbo(800, 600);
+ * 
+ * // Render to framebuffer
+ * fbo.bind();
+ * glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+ * // ... render scene ...
+ * 
+ * // Return to screen and use framebuffer texture for post-processing
+ * FrameBuffer::unbind();
+ * glBindTexture(GL_TEXTURE_2D, fbo.mTextureID);
+ * // ... render fullscreen quad with post-processing shader ...
+ * ```
  */
 class FrameBuffer {
 public:
@@ -79,7 +95,8 @@ public:
 
   unsigned int mTextureID;  // Color attachment texture ID (public for easy access)
   unsigned int mRboID;      // Depth renderbuffer ID (public for easy access)
+  
 private:
-  unsigned int mRendererID = 0;
-  int mWidth, mHeight;
+  unsigned int mRendererID = 0;  // OpenGL framebuffer object ID
+  int mWidth, mHeight;           // Framebuffer dimensions
 };

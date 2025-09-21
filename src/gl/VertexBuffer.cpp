@@ -5,9 +5,9 @@
 #include <iostream>
 
 VertexBuffer::VertexBuffer(const void* data, unsigned int size) {
-  glGenBuffers(1, &mRendererId);
-  glBindBuffer(GL_ARRAY_BUFFER, mRendererId);
-  glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+  glGenBuffers(1, &mRendererId);                                    // Generate a new VBO ID from OpenGL
+  glBindBuffer(GL_ARRAY_BUFFER, mRendererId);                       // Bind as the active array buffer
+  glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);        // Upload data to GPU (static = won't change often)
 }
 
 VertexBuffer::~VertexBuffer() {
@@ -16,8 +16,8 @@ VertexBuffer::~VertexBuffer() {
 
 void VertexBuffer::clean() {
   if (mRendererId != 0 && glfwGetCurrentContext()) {
-    glDeleteBuffers(1, &mRendererId);
-    mRendererId = 0;
+    glDeleteBuffers(1, &mRendererId);  // Delete the VBO from GPU memory
+    mRendererId = 0;  // Mark as invalid to prevent double-deletion
   }
 }
 
@@ -40,9 +40,9 @@ VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
 }
 
 void VertexBuffer::Bind() const {
-  glBindBuffer(GL_ARRAY_BUFFER, mRendererId);
+  glBindBuffer(GL_ARRAY_BUFFER, mRendererId);  // Make this VBO the active array buffer
 }
 
 void VertexBuffer::Unbind() {
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);  // Unbind any VBO (bind to default state)
 }
