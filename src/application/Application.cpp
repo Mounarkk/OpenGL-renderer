@@ -3,6 +3,7 @@
 #include "../gl/Debug.h"
 #include "../gl/GLObjectDestroyer.h"
 #include "../resource/ResourceManager.h"
+#include "../core/RendererException.h"
 
 #include <glad/glad.h>
 
@@ -58,7 +59,7 @@ void Application::Initialize() {
   // Initialize GLFW library for window and input management
   if (!glfwInit()) {
     Logger::get()->error("Failed to initialize GLFW");
-    return;
+    throw RendererException("Failed to initialize GLFW - check OpenGL drivers and system compatibility");
   }
 
   // Configure OpenGL context before window creation
@@ -76,7 +77,7 @@ void Application::Initialize() {
   if (!m_Window) {
     Logger::get()->error("Failed to create GLFW window");
     glfwTerminate();
-    return;
+    throw RendererException("Failed to create GLFW window - check OpenGL version support (requires OpenGL 3.3+)");
   }
 
   glfwMakeContextCurrent(m_Window);                                    // Make this window's context current for OpenGL calls
@@ -91,7 +92,7 @@ void Application::Initialize() {
   // Load OpenGL function pointers using GLAD
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
     Logger::get()->error("Failed to initialize GLAD");
-    return;
+    throw RendererException("Failed to initialize GLAD - OpenGL function loading failed, check graphics drivers");
   }
 
   m_Renderer = std::make_unique<Renderer>();

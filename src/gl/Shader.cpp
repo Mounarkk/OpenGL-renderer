@@ -1,4 +1,5 @@
 #include "Shader.h"
+#include "../core/RendererException.h"
 
 #include "GLFW/glfw3.h"
 
@@ -26,7 +27,7 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
   } catch ([[maybe_unused]] std::ifstream::failure &e) {
     Logger::get()->error("Failed to open shader files: {}, {}", vertexPath,
                          fragmentPath);
-    return;
+    throw ShaderException("file loading", "Failed to open shader files: " + vertexPath + ", " + fragmentPath);
   }
   const char *vShaderCode = vertexCode.c_str();
   const char *fShaderCode = fragmentCode.c_str();
@@ -44,6 +45,8 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
   if (!success) {
     glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);  // Get detailed error message
     Logger::get()->error("Vertex shader compilation failed: {}", infoLog);
+    glDeleteShader(vertexShader);  // Clean up on failure
+    throw ShaderException("vertex", "Compilation failed: " + std::string(infoLog));
   }
 
   // ------------------------------------------------------------------------
@@ -57,6 +60,9 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
   if (!success) {
     glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);  // Get detailed error message
     Logger::get()->error("Fragment shader compilation failed: {}", infoLog);
+    glDeleteShader(vertexShader);    // Clean up on failure
+    glDeleteShader(fragmentShader);  // Clean up on failure
+    throw ShaderException("fragment", "Compilation failed: " + std::string(infoLog));
   }
 
   // ------------------------------------------------------------------------
@@ -72,6 +78,10 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) {
   if (!success) {
     glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog); // Get detailed error message
     Logger::get()->error("Shader program linking failed: {}", infoLog);
+    glDeleteShader(vertexShader);    // Clean up on failure
+    glDeleteShader(fragmentShader);  // Clean up on failure
+    glDeleteProgram(shaderProgram);  // Clean up on failure
+    throw ShaderException("program linking", "Linking failed: " + std::string(infoLog));
   }
 
   // Clean up individual shader objects (no longer needed after linking)

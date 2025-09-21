@@ -2,6 +2,7 @@
 #include "ModelLoader.h"
 #include "../scene/Scene.h"
 #include "../core/Logger.h"
+#include "../core/RendererException.h"
 #include <functional>
 
 // Static member definitions
@@ -61,9 +62,14 @@ std::shared_ptr<Texture> ResourceManager::loadTexture(const std::string &path,
   }
 
   Logger::get()->debug("Loading new texture: {}", path);
-  auto texture = std::make_shared<Texture>(path, sRGB);
-  sTextureCache[path] = texture;
-  return texture;
+  try {
+    auto texture = std::make_shared<Texture>(path, sRGB);
+    sTextureCache[path] = texture;
+    return texture;
+  } catch (const std::exception& e) {
+    Logger::get()->error("Failed to load texture: {}", path);
+    throw ResourceException(path, "Texture loading failed - " + std::string(e.what()));
+  }
 }
 
 std::shared_ptr<Shader> ResourceManager::loadShader(const std::string &vsPath,
@@ -77,9 +83,17 @@ std::shared_ptr<Shader> ResourceManager::loadShader(const std::string &vsPath,
   }
 
   Logger::get()->debug("Loading new shader: {} | {}", vsPath, fsPath);
-  auto shader = std::make_shared<Shader>(vsPath, fsPath);
-  sShaderCache[key] = shader;
-  return shader;
+  try {
+    auto shader = std::make_shared<Shader>(vsPath, fsPath);
+    sShaderCache[key] = shader;
+    return shader;
+  } catch (const ShaderException& e) {
+    Logger::get()->error("Failed to load shader: {} | {}", vsPath, fsPath);
+    throw; // Re-throw the ShaderException as-is
+  } catch (const std::exception& e) {
+    Logger::get()->error("Failed to load shader: {} | {}", vsPath, fsPath);
+    throw ResourceException(vsPath + " | " + fsPath, "Shader loading failed - " + std::string(e.what()));
+  }
 }
 
 Entity ResourceManager::loadModel(Scene &scene, const std::string &path) {
@@ -115,6 +129,7 @@ Entity ResourceManager::loadModel(Scene &scene, const std::string &path) {
     Logger::get()->info("Successfully loaded and cached model: {}", path);
   } else {
     Logger::get()->error("Failed to load model: {}", path);
+    throw ResourceException(path, "Model loading failed - invalid model data or unsupported format");
   }
   
   return rootEntity;

@@ -1,4 +1,5 @@
 #include "ModelLoader.h"
+#include "../core/RendererException.h"
 
 #include "../gl/GLObjectDestroyer.h"
 
@@ -11,7 +12,7 @@ Entity ModelLoader::load(Scene &scene, std::string &path) {
   if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !aiScene->mRootNode) {
     Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    return Entity{entt::null, nullptr}; // Invalid entity
+    throw ResourceException(path, "Assimp loading failed: " + std::string(importer.GetErrorString()));
   }
 
   // Get the object path

@@ -1,4 +1,5 @@
 #include "Texture.h"
+#include "../core/RendererException.h"
 #include "../../vendor/stb_image/stb_image.h"
 #include "GLFW/glfw3.h"
 
@@ -9,7 +10,7 @@ Texture::Texture(const std::string &path, const bool sRGB) {
       stbi_load(path.c_str(), &mWidth, &mHeight, &mChannels, 0);
   if (!data) {
     Logger::get()->error("Failed to load texture: {}", path);
-    return;
+    throw ResourceException(path, "STB image loading failed: " + std::string(stbi_failure_reason()));
   }
 
   // Determine format
