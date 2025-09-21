@@ -2,6 +2,19 @@
 
 #include "LightManager.h"
 
+Renderer::Renderer() {
+  // Base renderer constructor - derived classes will set up their render passes
+}
+
+Renderer::~Renderer() {
+  cleanup();
+}
+
+void Renderer::clear() {
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 void Renderer::prepareCommandQueue(Scene &scene) {
   const auto view = scene.getAll<Transform, MeshRenderer>();
 
@@ -27,11 +40,6 @@ void Renderer::flush(const glm::mat4 &projMat, const glm::mat4 &viewMat) {
   }
 
   s_CommandQueue.clear();
-}
-
-void Renderer::clear() {
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 ForwardRenderer::ForwardRenderer() {

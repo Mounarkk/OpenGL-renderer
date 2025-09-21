@@ -16,6 +16,8 @@ Mesh::Mesh(const std::vector<Vertex> &vertices,
   VertexBufferLayout layout;
   layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 3);
+  layout.Push(GL_FLOAT, 3);
+  layout.Push(GL_FLOAT, 3);
   layout.Push(GL_FLOAT, 2);
 
   // Create VAO

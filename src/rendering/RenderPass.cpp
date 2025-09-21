@@ -1,11 +1,12 @@
 #include "RenderPass.h"
 #include "LightManager.h"
+#include "../resource/ResourceManager.h"
 
 
 ForwardLightingPass::ForwardLightingPass(const std::string &vertexPath,
                                      const std::string &fragmentPath,
                                      const int width, const int height) {
-  mShader = std::make_unique<Shader>(vertexPath, fragmentPath);
+  mShader = ResourceManager::loadShader(vertexPath, fragmentPath);
   mFBO = std::make_unique<FrameBuffer>(width, height);
   mSkybox = std::make_unique<Skybox>();
 }
@@ -36,7 +37,7 @@ void ForwardLightingPass::execute(std::vector<RenderCommand> &s_CommandQueue, co
 
 void ForwardLightingPass::cleanup() {
   mFBO->clean();
-  mShader->clean();
+  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup needed
 }
 
 void ForwardLightingPass::resize(int width, int height) {
@@ -57,7 +58,7 @@ PostProcessingPass::PostProcessingPass(const std::string &vertexPath,
                                  const std::string &fragmentPath,
                                  const int texColorBufferID) {
   mTexColorBufferID = texColorBufferID;
-  mShader = std::make_unique<Shader>(vertexPath, fragmentPath);
+  mShader = ResourceManager::loadShader(vertexPath, fragmentPath);
   setupQuad();
 }
 
@@ -89,7 +90,7 @@ void PostProcessingPass::execute(std::vector<RenderCommand> &s_CommandQueue,
 void PostProcessingPass::cleanup() {
   mQuadVAO->clean();
   mQuadVBO->clean();
-  mShader->clean();
+  // mShader is now managed by ResourceManager via shared_ptr, no manual cleanup needed
 }
 
 void PostProcessingPass::setupQuad() {

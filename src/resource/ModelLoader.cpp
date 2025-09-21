@@ -1,16 +1,18 @@
 #include "ModelLoader.h"
+#include "../core/RendererException.h"
 
 #include "../gl/GLObjectDestroyer.h"
 
 Entity ModelLoader::load(Scene &scene, std::string &path) {
   Assimp::Importer importer;
   const aiScene *aiScene =
-      importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+      importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs
+        | aiProcess_CalcTangentSpace);
 
   if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
       !aiScene->mRootNode) {
     Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    return Entity{entt::null, nullptr}; // Invalid entity
+    throw ResourceException(path, "Assimp loading failed: " + std::string(importer.GetErrorString()));
   }
 
   // Get the object path
@@ -58,6 +60,12 @@ Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
     if (mesh->HasNormals()) {
       vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y,
                        mesh->mNormals[i].z};
+    }
+    if (mesh->HasTangentsAndBitangents()) {
+      vertex.tangent = {mesh->mTangents[i].x, mesh->mTangents[i].y,
+                        mesh->mTangents[i].z};
+      vertex.bitangent = {mesh->mBitangents[i].x, mesh->mBitangents[i].y,
+                          mesh->mBitangents[i].z};
     }
     if (mesh->mTextureCoords[0]) {
       vertex.texCoords = {mesh->mTextureCoords[0][i].x,

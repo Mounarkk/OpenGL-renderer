@@ -1,3 +1,10 @@
-# Base folders to not include
-/cmake-build-debug
+# IDE specific folders
 /.idea
+
+# Builds
+/build
+/cmake-build-debug
+
+# Resources
+/res/models
+/res/textures
