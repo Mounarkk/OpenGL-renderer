@@ -2,15 +2,18 @@
 
 #include "LightManager.h"
 
-std::vector<RenderCommand> Renderer::s_CommandQueue;
-
 Renderer::Renderer() {
+  // Get configured paths and window dimensions
+  std::string shaderPath = Config::getShaderPath();
+  int width = Config::getWindowWidth();
+  int height = Config::getWindowHeight();
+  
   // Uses pointers to be able to apply polymorphism
   const auto forward =
-      new ForwardRenderPass("../res/shaders/default_shader_frag.vert",
-                            "../res/shaders/default_shader.frag", 800, 600);
+      new ForwardRenderPass(shaderPath + "default_shader_frag.vert",
+                            shaderPath + "default_shader.frag", width, height);
   const auto final =
-    new FinalRenderPass("../res/shaders/screen.vert", "../res/shaders/screen.frag", forward
+    new FinalRenderPass(shaderPath + "screen.vert", shaderPath + "screen.frag", forward
       ->getTextColorBufferID());
 
   mRenderPasses.push_back(reinterpret_cast<RenderPass *>(forward));
@@ -21,29 +24,27 @@ Renderer::~Renderer() {
   cleanup();
 }
 
-
-
 void Renderer::clear() {
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 void Renderer::submit(const RenderCommand &command) {
-  s_CommandQueue.push_back(command);
+  m_CommandQueue.push_back(command);
 }
 
-void Renderer::flush(const glm::mat4 &viewProj) const {
+void Renderer::flush(const glm::mat4 &viewProj) {
   // Sort by material to minimize state changes
-  std::sort(s_CommandQueue.begin(), s_CommandQueue.end(),
+  std::sort(m_CommandQueue.begin(), m_CommandQueue.end(),
             [](const RenderCommand &a, const RenderCommand &b) {
               return a.material < b.material;
             });
 
   for (int i = 0; i < mRenderPasses.size(); i++) {
-    mRenderPasses[i]->execute(s_CommandQueue, viewProj);
+    mRenderPasses[i]->execute(m_CommandQueue, viewProj);
   }
 
-  s_CommandQueue.clear();
+  m_CommandQueue.clear();
 }
 
 void Renderer::cleanup() const {

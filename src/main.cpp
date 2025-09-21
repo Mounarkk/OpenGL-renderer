@@ -1,7 +1,8 @@
 #include "./application/Application.h"
 
 int main() {
-  Application app(800, 600, "Renderer");
+  // Use configuration-based constructor for better flexibility
+  Application app("OpenGL Renderer");
   app.Run();
   return 0;
 }

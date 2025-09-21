@@ -5,7 +5,7 @@
 
 class RenderingSystem {
 public:
-  static void onUpdate(Scene &scene) {
+  static void onUpdate(Scene &scene, Renderer &renderer) {
     const auto view = scene.getAll<Transform, MeshRenderer>();
 
     for (const auto entity : view) {
@@ -14,7 +14,7 @@ public:
       renderCommand.transform = transform;
       renderCommand.mesh = meshRenderer.mesh;
       renderCommand.material = meshRenderer.material;
-      Renderer::submit(renderCommand);
+      renderer.submit(renderCommand);
     }
   }
 };
