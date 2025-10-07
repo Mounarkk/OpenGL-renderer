@@ -4,6 +4,8 @@
 #include "../gl/Debug.h"
 #include "../gl/GLObjectDestroyer.h"
 #include "../resource/ResourceManager.h"
+#include "../rendering/Mesh.h"
+#include "../scene/Components.h"
 
 #include <glad/glad.h>
 #include <gtc/matrix_transform.hpp>
@@ -114,9 +116,8 @@ void Application::Initialize() {
   // Enable debug out put
   enableGLDebugging();
 
-  // Initialize scene with default model
-  std::string backpackPath = Config::getModelPath() + "backpack/backpack.obj";
-  ResourceManager::loadModel(m_Scene, backpackPath);
+  // Initialize scene with multiple backpacks for shadow testing
+  SetupShadowTestScene();
 }
 
 void Application::Run() {
@@ -226,6 +227,61 @@ void Application::SubmitRenderables() {
 void Application::ExecuteRendering() {
   // Execute all queued render commands with current camera matrices
   m_Renderer->flush(m_ProjectionMatrix, m_ViewMatrix);
+}
+
+void Application::SetupShadowTestScene() {
+  std::string backpackPath = Config::getModelPath() + "backpack/backpack.obj";
+  
+  // Create custom transforms for each backpack
+  Transform transform1;
+  transform1.position = glm::vec3(-2.0f, 0.0f, 0.0f);
+  transform1.scale = glm::vec3(0.5f); // Make them a bit smaller
+  
+  Transform transform2;
+  transform2.position = glm::vec3(2.0f, 0.0f, -1.0f);
+  transform2.rotation.y = glm::radians(45.0f); // Rotate 45 degrees
+  transform2.scale = glm::vec3(0.5f);
+  
+  Transform transform3;
+  transform3.position = glm::vec3(0.0f, 1.0f, 1.0f); // Elevated
+  transform3.rotation.x = glm::radians(15.0f);
+  transform3.scale = glm::vec3(0.4f);
+  
+  // Load models with custom transforms - each gets its own instance
+  Entity backpack1 = ResourceManager::loadModel(m_Scene, backpackPath, &transform1);
+  Entity backpack2 = ResourceManager::loadModel(m_Scene, backpackPath, &transform2);
+  Entity backpack3 = ResourceManager::loadModel(m_Scene, backpackPath, &transform3);
+  
+  // Create a simple ground plane
+  CreateGroundPlane();
+}
+
+void Application::CreateGroundPlane() {
+  // Create vertices for a large ground plane
+  std::vector<Vertex> vertices = {
+    // Position                    Normal              Tangent             Bitangent           TexCoords
+    {{-10.0f, -1.0f, -10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+    {{ 10.0f, -1.0f, -10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {5.0f, 0.0f}},
+    {{ 10.0f, -1.0f,  10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {5.0f, 5.0f}},
+    {{-10.0f, -1.0f,  10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 5.0f}}
+  };
+  
+  std::vector<unsigned int> indices = {
+    0, 1, 2,  // First triangle
+    2, 3, 0   // Second triangle
+  };
+  
+  // Create a simple material (you might want to load a texture for this)
+  auto material = std::make_shared<Material>();
+  
+  // Create the mesh
+  auto planeMesh = std::make_shared<Mesh>(vertices, indices, material);
+  GLObjectDestroyer::getInstance().registerMesh(planeMesh);
+  
+  // Create entity for the ground plane
+  Entity groundPlane = m_Scene.createEntity("GroundPlane");
+  groundPlane.addComponent<Transform>(); // Default transform (at origin)
+  groundPlane.addComponent<MeshRenderer>(planeMesh, material);
 }
 
 void Application::Cleanup() {

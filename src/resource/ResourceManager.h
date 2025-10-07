@@ -78,9 +78,11 @@ public:
    * Uses caching to avoid reloading the same model multiple times.
    * @param scene Scene to create the model entities in
    * @param path File path to the 3D model (supports OBJ, FBX, GLTF, etc.)
+   * @param customTransform Optional custom transform to apply to the root entity
    * @return Root entity of the loaded model hierarchy
    */
-  static Entity loadModel(Scene &scene, const std::string &path);
+  static Entity loadModel(Scene &scene, const std::string &path, 
+                         const Transform* customTransform = nullptr);
 
   /**
    * Gets the number of cached resources for debugging/monitoring.

@@ -3,7 +3,8 @@
 
 #include "../gl/GLObjectDestroyer.h"
 
-Entity ModelLoader::load(Scene &scene, std::string &path) {
+Entity ModelLoader::load(Scene &scene, std::string &path, 
+                        const Transform* customTransform) {
   Assimp::Importer importer;
   const aiScene *aiScene =
       importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
@@ -23,34 +24,36 @@ Entity ModelLoader::load(Scene &scene, std::string &path) {
   }
 
   const Entity root = scene.createEntity("ModelRoot");
-  processNode(aiScene->mRootNode, aiScene, scene, root, path);
+  processNode(aiScene->mRootNode, aiScene, scene, root, path, customTransform);
   return root;
 }
 
 void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
                               Scene &scene, Entity parent,
-                              const std::string &path) {
+                              const std::string &path,
+                              const Transform* customTransform) {
   // Create an entity for this node
   Entity entity = scene.createEntity(node->mName.C_Str());
-  // Add default transform component
+  // Add default transform component (nodes don't get custom transform, only meshes do)
   entity.addComponent<Transform>();
 
-  // Process meshes
+  // Process meshes - pass custom transform to mesh entities
   for (unsigned i = 0; i < node->mNumMeshes; i++) {
     aiMesh *mesh = aiScene->mMeshes[node->mMeshes[i]];
-    // Process mesh for this node
-    processMesh(mesh, aiScene, scene, entity, path);
+    // Process mesh for this node, applying custom transform to mesh entities
+    processMesh(mesh, aiScene, scene, entity, path, customTransform);
   }
 
-  // Process children
+  // Process children - pass custom transform down the hierarchy
   for (unsigned i = 0; i < node->mNumChildren; i++) {
-    processNode(node->mChildren[i], aiScene, scene, entity, path);
+    processNode(node->mChildren[i], aiScene, scene, entity, path, customTransform);
   }
 }
 
 Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
                                 Scene &scene, Entity parent,
-                                const std::string &path) {
+                                const std::string &path,
+                                const Transform* customTransform) {
   // Convert Assimp mesh to our Mesh class
   std::vector<Vertex> vertices;
   std::vector<unsigned int> indices;
@@ -96,8 +99,14 @@ Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
   GLObjectDestroyer::getInstance().registerMesh(myMesh);
 
   Entity meshEntity = scene.createEntity(mesh->mName.C_Str());
-  // Add default transform component
-  meshEntity.addComponent<Transform>();
+  
+  // Apply custom transform to mesh entity if provided, otherwise use default
+  if (customTransform) {
+    meshEntity.addComponent<Transform>(*customTransform);
+  } else {
+    meshEntity.addComponent<Transform>();
+  }
+  
   meshEntity.addComponent<MeshRenderer>(myMesh, material);
   return meshEntity;
 }

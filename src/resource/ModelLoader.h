@@ -36,9 +36,11 @@ public:
    * Loads a 3D model from file and creates entities in the specified scene.
    * @param scene Scene to create the model entities in
    * @param path File path to the 3D model (supports OBJ, FBX, GLTF, etc.)
+   * @param customTransform Optional custom transform to apply to the root entity
    * @return Root entity of the loaded model hierarchy
    */
-  static Entity load(Scene &scene, std::string &path);
+  static Entity load(Scene &scene, std::string &path, 
+                    const Transform* customTransform = nullptr);
 
 private:
   /**
@@ -49,9 +51,11 @@ private:
    * @param scene Target scene for entity creation
    * @param parent Parent entity for hierarchical relationships
    * @param path Base path for resolving texture file paths
+   * @param customTransform Optional custom transform to apply to mesh entities
    */
   static void processNode(const aiNode *node, const aiScene *aiScene,
-                          Scene &scene, Entity parent, const std::string &path);
+                          Scene &scene, Entity parent, const std::string &path,
+                          const Transform* customTransform = nullptr);
 
   /**
    * Processes a single mesh from the Assimp scene.
@@ -61,9 +65,11 @@ private:
    * @param scene Target scene for entity creation
    * @param parent Parent entity for the mesh
    * @param path Base path for resolving texture file paths
+   * @param customTransform Optional custom transform to apply to this mesh entity
    * @return Entity representing the processed mesh
    */
   static Entity processMesh(const aiMesh *mesh, const aiScene *aiScene,
                             Scene &scene, Entity parent,
-                            const std::string &path);
+                            const std::string &path,
+                            const Transform* customTransform = nullptr);
 };

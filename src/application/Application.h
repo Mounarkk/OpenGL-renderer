@@ -148,6 +148,16 @@ private:
    */
   void HandleScrollInput(double xOffset, double yOffset);
 
+  /**
+   * Sets up a test scene with multiple backpacks and a ground plane for shadow testing.
+   */
+  void SetupShadowTestScene();
+
+  /**
+   * Creates a simple ground plane for shadow testing.
+   */
+  void CreateGroundPlane();
+
   // Window and input
   GLFWwindow *m_Window;
   int m_Width, m_Height;

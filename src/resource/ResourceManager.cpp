@@ -98,38 +98,46 @@ std::shared_ptr<Shader> ResourceManager::loadShader(const std::string &vsPath,
   }
 }
 
-Entity ResourceManager::loadModel(Scene &scene, const std::string &path) {
-  // Check if model is already loaded in cache
-  if (const auto it = sModelCache.find(path); it != sModelCache.end()) {
-    // Check if the cached scene is still valid and the entity exists
-    if (auto cachedScene = it->second.scene.lock()) {
-      if (cachedScene.get() == &scene &&
-          it->second.rootEntityHandle != entt::null) {
-        Entity cachedEntity(it->second.rootEntityHandle, &scene);
-        if (cachedEntity) { // Use operator bool() to check validity
-          Logger::get()->info("Using cached model: {}", path);
-          return cachedEntity;
+Entity ResourceManager::loadModel(Scene &scene, const std::string &path, 
+                                 const Transform* customTransform) {
+  // Note: When using custom transforms, we skip caching to allow multiple instances
+  // with different transforms. Only cache models with default transforms.
+  if (!customTransform) {
+    // Check if model is already loaded in cache
+    if (const auto it = sModelCache.find(path); it != sModelCache.end()) {
+      // Check if the cached scene is still valid and the entity exists
+      if (auto cachedScene = it->second.scene.lock()) {
+        if (cachedScene.get() == &scene &&
+            it->second.rootEntityHandle != entt::null) {
+          Entity cachedEntity(it->second.rootEntityHandle, &scene);
+          if (cachedEntity) { // Use operator bool() to check validity
+            Logger::get()->info("Using cached model: {}", path);
+            return cachedEntity;
+          }
         }
       }
+      // Remove invalid cache entry
+      sModelCache.erase(it);
     }
-    // Remove invalid cache entry
-    sModelCache.erase(it);
   }
 
   // Load the model using ModelLoader
   Logger::get()->info("Loading model: {}", path);
   std::string modelPath =
       path; // ModelLoader modifies the path, so we need a copy
-  Entity rootEntity = ModelLoader::load(scene, modelPath);
+  Entity rootEntity = ModelLoader::load(scene, modelPath, customTransform);
 
   if (rootEntity) { // Use operator bool() to check validity
-    // Cache the loaded model
-    ModelCacheEntry entry(
-        std::shared_ptr<Scene>(&scene, [](Scene *) {}), // Non-owning shared_ptr
-        rootEntity.handle());
-    sModelCache[path] = entry;
-
-    Logger::get()->info("Successfully loaded and cached model: {}", path);
+    // Only cache models with default transforms to allow multiple instances
+    if (!customTransform) {
+      ModelCacheEntry entry(
+          std::shared_ptr<Scene>(&scene, [](Scene *) {}), // Non-owning shared_ptr
+          rootEntity.handle());
+      sModelCache[path] = entry;
+      Logger::get()->info("Successfully loaded and cached model: {}", path);
+    } else {
+      Logger::get()->info("Successfully loaded model with custom transform: {}", path);
+    }
   } else {
     Logger::get()->error("Failed to load model: {}", path);
     throw ResourceException(
