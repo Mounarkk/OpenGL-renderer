@@ -6,5 +6,8 @@
 /cmake-build-debug
 
 # Resources
-/res/models
+/res/models/san_miguel
+/res/models/sponza
+/res/models/breakfast
+/res/models/*
 /res/textures

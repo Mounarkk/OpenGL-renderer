@@ -41,9 +41,25 @@ void Renderer::flush(const glm::mat4 &projMat, const glm::mat4 &viewMat) {
 
 ForwardRenderer::ForwardRenderer() {
   // Create render passes using smart pointers for automatic memory management
+  auto shadowMapping = std::make_unique<ShadowMappingPass>("../res/shaders/shadowm_shader.vert",
+                                                          "../res/shaders/shadowm_shader.frag",
+                                                          1024, 1024);
+  
+  // We need to initialize the light matrices first - create a temporary calculation
+  constexpr float nearPlane = 1.0f;
+  constexpr float farPlane = 7.5f;
+  const glm::mat4 dirLightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, nearPlane, farPlane);
+  const glm::mat4 dirLightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), 
+                                            glm::vec3(0.0f, 0.0f, 0.0f),
+                                            glm::vec3(0.0f, 1.0f, 0.0f));
+  const glm::mat4 dirLightViewProj = dirLightProjection * dirLightView;
+  
+  auto dirLightShadowMapID = shadowMapping->getTextDepthBufferID();
+
   auto forward = std::make_unique<ForwardLightingPass>(
       "../res/shaders/forward_shader.vert",
-      "../res/shaders/forward_shader.frag", 800, 600);
+      "../res/shaders/forward_shader.frag", 800, 600,
+      dirLightShadowMapID, dirLightViewProj);
 
   // Get the texture ID before moving the forward pass
   const int textColorBufferID = forward->getTextColorBufferID();
@@ -53,6 +69,7 @@ ForwardRenderer::ForwardRenderer() {
       textColorBufferID);
 
   // Move the unique_ptrs into the render passes vector (cast to base class)
+  mRenderPasses.push_back(std::unique_ptr<RenderPass>(shadowMapping.release()));
   mRenderPasses.push_back(std::unique_ptr<RenderPass>(forward.release()));
   mRenderPasses.push_back(
       std::unique_ptr<RenderPass>(postProcessing.release()));

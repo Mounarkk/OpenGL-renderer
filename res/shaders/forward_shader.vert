@@ -7,11 +7,13 @@ layout (location = 4) in vec2 aTexCoords;
 
 out vec3 Normal;
 out vec3 FragPos;
+out vec4 FragPosDirLightSpace;
 out vec2 TexCoords;
 out mat3 TBN;
 
 uniform mat4 uModel;
 uniform mat4 uViewProj;
+uniform mat4 uDirLightViewProj;
 
 void main()
 {
@@ -19,6 +21,7 @@ void main()
     gl_Position = uViewProj * uModel * vec4(aPos, 1.0);
     TexCoords = aTexCoords;
     FragPos = vec3(uModel * vec4(aPos, 1.0));
+    FragPosDirLightSpace = uDirLightViewProj * vec4(FragPos, 1.0);
     Normal = mat3(transpose(inverse(uModel))) * aNormal;
 
     // TBN matrix

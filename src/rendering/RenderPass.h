@@ -26,10 +26,32 @@ protected:
   std::shared_ptr<Shader> mShader;
 };
 
+class ShadowMappingPass final : public RenderPass {
+public:
+  ShadowMappingPass(const std::string &vertexPath,
+    const std::string &fragmentPath, int depthMapWidth,
+    int depthMapHeight);
+  ~ShadowMappingPass() override;
+
+  void execute(std::vector<RenderCommand> &s_CommandQueue,
+               const glm::mat4 &projMat, const glm::mat4 &viewMat) override;
+  void cleanup() override;
+  void resize(int width, int height) override;
+
+  [[nodiscard]] int getTextDepthBufferID() const;
+  [[nodiscard]] glm::mat4 getDirLightProjView() const;
+
+private:
+  std::unique_ptr<FrameBuffer> mFBO;
+  glm::mat4 mDirLightProjView;
+};
+
 class ForwardLightingPass final : public RenderPass {
 public:
   ForwardLightingPass(const std::string &vertexPath,
-                      const std::string &fragmentPath, int width, int height);
+                      const std::string &fragmentPath, int width, int height,
+                      int dirLightShadowMapBufferID,
+                      const glm::mat4 &dirLightProjView);
   ~ForwardLightingPass() override;
 
   void execute(std::vector<RenderCommand> &s_CommandQueue,
@@ -42,6 +64,8 @@ public:
 private:
   std::unique_ptr<FrameBuffer> mFBO;
   std::unique_ptr<Skybox> mSkybox;
+  int mDirLightShadowMapBufferID;
+  glm::mat4 mDirLightProjView;
 };
 
 class PostProcessingPass final : public RenderPass {

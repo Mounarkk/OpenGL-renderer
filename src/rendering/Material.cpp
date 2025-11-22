@@ -18,7 +18,7 @@ void Material::bind(const std::shared_ptr<Shader> &shader) const {
   shader->setFloat("uMaterial.shininess", mShininess);
 
   // Bind textures
-  int textureSlot = 0;
+  int textureSlot = 1;
   for (const auto &[type, texture] : m_Textures) {
     texture->bind(textureSlot);
 
