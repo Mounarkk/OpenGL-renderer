@@ -1,7 +1,8 @@
 #pragma once
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+/// Thin wrapper around a global spdlog logger.
 class Logger {
 public:
   static void init();

@@ -1,53 +1,52 @@
 #include "Application.h"
 
+#include "../core/Config.h"
+#include "../core/Logger.h"
 #include "../core/RendererException.h"
 #include "../gl/Debug.h"
-#include "../gl/GLObjectDestroyer.h"
-#include "../resource/ResourceManager.h"
+#include "../rendering/LightManager.h"
+#include "../rendering/Material.h"
 #include "../rendering/Mesh.h"
+#include "../resource/ResourceManager.h"
 #include "../scene/Components.h"
 
 #include <glad/glad.h>
-#include <gtc/matrix_transform.hpp>
+#include <stb_image_write.h>
 
+#include <chrono>
+#include <cmath>
+#include <ctime>
+#include <filesystem>
+#include <iomanip>
+#include <sstream>
 #include <utility>
+#include <vector>
 
-Application::Application(std::string title) : m_Title(std::move(title)) {
-  // Initialize logger first
+namespace {
+/// Radians per second when rotating the sun with the arrow keys.
+constexpr float kSunRotationSpeed = 0.6f;
+
+/// Frames rendered before an automatic screenshot, so that everything
+/// (window size, first shadow maps) has settled.
+constexpr int kScreenshotWarmupFrames = 5;
+
+std::string timestampedScreenshotName() {
+  const std::time_t now =
+      std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  std::ostringstream name;
+  name << "screenshot_" << std::put_time(std::localtime(&now), "%Y%m%d_%H%M%S")
+       << ".png";
+  return name.str();
+}
+} // namespace
+
+Application::Application(std::string title, ApplicationOptions options)
+    : m_Title(std::move(title)), m_Options(std::move(options)) {
   Logger::init();
+  Config::load(Config::getRootPath() + "config.txt");
 
-  // Load configuration first
-  Config::load(
-      "../config.txt"); // The path needs to be set relative to the executable
-
-  // Use configuration values
   m_Width = Config::getWindowWidth();
   m_Height = Config::getWindowHeight();
-
-  // Initialize camera with configured settings
-  m_Camera = Camera(glm::vec3(0.0f, 0.0f, 3.0f));
-  m_Camera.mMovementSpeed = Config::getCameraSpeed();
-  m_Camera.mMouseSensitivity = Config::getCameraSensitivity();
-  m_Camera.mZoom = Config::getCameraFOV();
-
-  // Initialize input handler with window dimensions
-  m_InputHandler.initialize(m_Width, m_Height);
-
-  Initialize();
-}
-
-Application::Application(const int width, const int height, std::string title)
-    : m_Width(width), m_Height(height), m_Title(std::move(title)),
-      m_Camera(glm::vec3(0.0f, 0.0f, 3.0f)) {
-  // Initialize logger first
-  Logger::init();
-
-  // Load configuration for paths and other settings
-  Config::load(
-      "config.txt"); // The path needs to be set relative to the executable
-
-  // Initialize input handler with window dimensions
-  m_InputHandler.initialize(width, height);
 
   Initialize();
 }
@@ -55,254 +54,271 @@ Application::Application(const int width, const int height, std::string title)
 Application::~Application() { Cleanup(); }
 
 void Application::Initialize() {
-  Logger::get()->info("Starting application...");
+  if (!glfwInit())
+    throw RendererException("Failed to initialize GLFW");
 
-  // Initialize GLFW library for window and input management
-  if (!glfwInit()) {
-    Logger::get()->error("Failed to initialize GLFW");
-    throw RendererException("Failed to initialize GLFW - check OpenGL drivers "
-                            "and system compatibility");
-  }
-
-  // Configure OpenGL context before window creation
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); // Request OpenGL 3.3
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(
-      GLFW_OPENGL_PROFILE,
-      GLFW_OPENGL_CORE_PROFILE); // Use core profile (no deprecated features)
-
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+#ifndef NDEBUG
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
 #ifdef __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT,
-                 GL_TRUE); // Required for macOS compatibility
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-  // Create a window
   m_Window =
       glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
   if (!m_Window) {
-    Logger::get()->error("Failed to create GLFW window");
     glfwTerminate();
-    throw RendererException("Failed to create GLFW window - check OpenGL "
-                            "version support (requires OpenGL 3.3+)");
+    throw RendererException("Failed to create the window, OpenGL 3.3 core is "
+                            "required");
   }
 
-  glfwMakeContextCurrent(
-      m_Window); // Make this window's context current for OpenGL calls
-  glfwSetWindowUserPointer(m_Window,
-                           this); // Store 'this' pointer for callback access
-  glfwSetFramebufferSizeCallback(
-      m_Window, FrameBufferSizeCallback); // Register window resize callback
-  glfwSetCursorPosCallback(m_Window,
-                           MouseCallback); // Register mouse movement callback
-  glfwSetScrollCallback(m_Window,
-                        ScrollCallback); // Register mouse scroll callback
+  glfwMakeContextCurrent(m_Window);
+  glfwSwapInterval(Config::getVSyncEnabled() ? 1 : 0);
 
-  // Capture mouse cursor for FPS-style camera controls
+  glfwSetWindowUserPointer(m_Window, this);
+  glfwSetFramebufferSizeCallback(m_Window, FrameBufferSizeCallback);
+  glfwSetCursorPosCallback(m_Window, MouseCallback);
+  glfwSetScrollCallback(m_Window, ScrollCallback);
+  glfwSetKeyCallback(m_Window, KeyCallback);
   glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-  // Load OpenGL function pointers using GLAD
-  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-    Logger::get()->error("Failed to initialize GLAD");
-    throw RendererException("Failed to initialize GLAD - OpenGL function "
-                            "loading failed, check graphics drivers");
-  }
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
+    throw RendererException("Failed to load OpenGL functions");
 
-  m_Renderer = std::make_unique<ForwardRenderer>();
-
-  // Enable depth testing for proper 3D rendering (closer objects hide farther
-  // ones)
-  glEnable(GL_DEPTH_TEST);
-
-  // Enable debug out put
+  Logger::get()->info("OpenGL {} on {}",
+                      reinterpret_cast<const char *>(glGetString(GL_VERSION)),
+                      reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
   enableGLDebugging();
 
-  // Initialize scene with multiple backpacks for shadow testing
-  SetupShadowTestScene();
+  // The framebuffer can differ from the window size on high DPI screens
+  glfwGetFramebufferSize(m_Window, &m_Width, &m_Height);
+  m_Renderer = std::make_unique<ForwardRenderer>(m_Width, m_Height);
+  m_ShowCascades = m_Options.showCascades;
+  m_Renderer->setShowCascades(m_ShowCascades);
+
+  if (m_Options.modelPath.empty())
+    SetupShadowTestScene();
+  else
+    SetupModelScene(m_Options.modelPath, m_Options.modelScale,
+                    m_Options.modelImport);
+
+  if (m_Options.hasCameraOverride)
+    m_Camera = Camera(m_Options.cameraPosition, glm::vec3(0.0f, 1.0f, 0.0f),
+                      m_Options.cameraYaw, m_Options.cameraPitch);
+  m_Camera.mMovementSpeed = Config::getCameraSpeed();
+  m_Camera.mMouseSensitivity = Config::getCameraSensitivity();
+  m_Camera.mZoom = Config::getCameraFOV();
 }
 
 void Application::Run() {
+  int frame = 0;
   while (!glfwWindowShouldClose(m_Window)) {
-    // Update time
     const auto currentFrame = static_cast<float>(glfwGetTime());
     m_DeltaTime = currentFrame - m_LastFrame;
     m_LastFrame = currentFrame;
 
-    // Input
     ProcessInput();
+    m_Scene.onUpdate(m_DeltaTime);
 
-    // Update
-    Update(m_DeltaTime);
+    // Nothing to draw into while the window is minimized
+    if (m_Width > 0 && m_Height > 0) {
+      Render();
 
-    // Render
-    Render();
+      if (m_ScreenshotRequested) {
+        SaveScreenshot(Config::getScreenshotPath() +
+                       timestampedScreenshotName());
+        m_ScreenshotRequested = false;
+      }
+      if (!m_Options.screenshotPath.empty() &&
+          ++frame == kScreenshotWarmupFrames) {
+        SaveScreenshot(m_Options.screenshotPath);
+        glfwSetWindowShouldClose(m_Window, true);
+      }
+    }
 
-    // Swap buffers and poll events
     glfwSwapBuffers(m_Window);
     glfwPollEvents();
   }
 }
 
 void Application::ProcessInput() {
-  // Delegate all input processing to the InputHandler
   m_InputHandler.processInput(m_Window, m_Camera, m_DeltaTime);
+
+  auto &lights = LightManager::getInstance();
+  if (glfwGetKey(m_Window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    lights.rotateSun(kSunRotationSpeed * m_DeltaTime);
+  if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    lights.rotateSun(-kSunRotationSpeed * m_DeltaTime);
 }
 
-void Application::Update(const float deltaTime) {
-  // Update scene systems
-  m_Scene.onUpdate(deltaTime);
+FrameContext Application::BuildFrameContext() const {
+  FrameContext frame;
+  frame.fovY = glm::radians(m_Camera.mZoom);
+  frame.aspectRatio =
+      static_cast<float>(m_Width) / static_cast<float>(m_Height);
+  frame.nearPlane = Config::getCameraNearPlane();
+  frame.farPlane = Config::getCameraFarPlane();
+  frame.view = m_Camera.getViewMatrix();
+  frame.projection = glm::perspective(frame.fovY, frame.aspectRatio,
+                                      frame.nearPlane, frame.farPlane);
+  frame.cameraPosition = m_Camera.mPosition;
+  return frame;
 }
 
 void Application::Render() {
-  // Clear the screen for the new frame
-  ForwardRenderer::clear();
-
-  // Set up camera matrices for rendering
-  SetupCameraMatrices();
-
-  // Submit all renderable objects to the renderer
-  SubmitRenderables();
-
-  // Execute the rendering pipeline
-  ExecuteRendering();
+  m_Renderer->submit(m_Scene);
+  m_Renderer->render(BuildFrameContext());
 }
 
-// Static callbacks
+void Application::SaveScreenshot(const std::string &path) const {
+  std::vector<unsigned char> pixels(static_cast<size_t>(m_Width) * m_Height *
+                                    3);
+  glPixelStorei(GL_PACK_ALIGNMENT, 1);
+  glReadBuffer(GL_BACK);
+  glReadPixels(0, 0, m_Width, m_Height, GL_RGB, GL_UNSIGNED_BYTE,
+               pixels.data());
+
+  const std::filesystem::path file(path);
+  if (file.has_parent_path())
+    std::filesystem::create_directories(file.parent_path());
+
+  // OpenGL rows start at the bottom of the image
+  stbi_flip_vertically_on_write(1);
+  if (stbi_write_png(path.c_str(), m_Width, m_Height, 3, pixels.data(),
+                     m_Width * 3))
+    Logger::get()->info("Screenshot saved to {}", path);
+  else
+    Logger::get()->error("Could not write screenshot {}", path);
+}
+
 void Application::FrameBufferSizeCallback(GLFWwindow *window, const int width,
                                           const int height) {
-  glViewport(0, 0, width, height);
-
-  // Update application with new dimensions
-  Application *app =
-      static_cast<Application *>(glfwGetWindowUserPointer(window));
-  if (app) {
-    app->m_Width = width;
-    app->m_Height = height;
-
-    // Update renderer with new dimensions
-    if (app->m_Renderer) {
-      app->m_Renderer->resize(width, height);
-    }
-  }
+  auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+  app->m_Width = width;
+  app->m_Height = height;
+  app->m_Renderer->resize(width, height);
 }
 
 void Application::MouseCallback(GLFWwindow *window, const double xPos,
                                 const double yPos) {
-  static_cast<Application *>(glfwGetWindowUserPointer(window))
-      ->HandleMouseInput(xPos, yPos);
+  auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+  app->m_InputHandler.handleMouseMovement(xPos, yPos, app->m_Camera);
 }
 
-void Application::ScrollCallback(GLFWwindow *window, const double xOffset,
+void Application::ScrollCallback(GLFWwindow *window, double /*xOffset*/,
                                  const double yOffset) {
-  static_cast<Application *>(glfwGetWindowUserPointer(window))
-      ->HandleScrollInput(xOffset, yOffset);
+  auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+  app->m_InputHandler.handleMouseScroll(yOffset, app->m_Camera);
 }
 
-void Application::HandleMouseInput(const double xPos, const double yPos) {
-  // Delegate mouse movement handling to InputHandler
-  m_InputHandler.handleMouseMovement(xPos, yPos, m_Camera);
-}
+void Application::KeyCallback(GLFWwindow *window, const int key,
+                              int /*scancode*/, const int action,
+                              int /*mods*/) {
+  if (action != GLFW_PRESS)
+    return;
 
-void Application::HandleScrollInput(double xOffset, const double yOffset) {
-  // Delegate scroll handling to InputHandler
-  m_InputHandler.handleMouseScroll(xOffset, yOffset, m_Camera);
-}
-
-void Application::SetupCameraMatrices() {
-  // Calculate view matrix from camera
-  m_ViewMatrix = m_Camera.getViewMatrix();
-
-  // Calculate projection matrix with current window aspect ratio
-  const float aspectRatio =
-      static_cast<float>(m_Width) / static_cast<float>(m_Height);
-  m_ProjectionMatrix = glm::perspective(
-      glm::radians(m_Camera.mZoom), aspectRatio, Config::getCameraNearPlane(),
-      Config::getCameraFarPlane());
-}
-
-void Application::SubmitRenderables() {
-  // Prepare the render command queue with scene objects
-  m_Renderer->prepareCommandQueue(m_Scene);
-}
-
-void Application::ExecuteRendering() {
-  // Execute all queued render commands with current camera matrices
-  m_Renderer->flush(m_ProjectionMatrix, m_ViewMatrix);
+  auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+  switch (key) {
+  case GLFW_KEY_C:
+    app->m_ShowCascades = !app->m_ShowCascades;
+    app->m_Renderer->setShowCascades(app->m_ShowCascades);
+    break;
+  case GLFW_KEY_F12:
+    app->m_ScreenshotRequested = true;
+    break;
+  default:
+    break;
+  }
 }
 
 void Application::SetupShadowTestScene() {
-  std::string backpackPath = Config::getModelPath() + "backpack/backpack.obj";
-  
-  // Create custom transforms for each backpack
-  Transform transform1;
-  transform1.position = glm::vec3(-2.0f, 0.0f, 0.0f);
-  transform1.scale = glm::vec3(0.5f); // Make them a bit smaller
-  
-  Transform transform2;
-  transform2.position = glm::vec3(2.0f, 0.0f, -1.0f);
-  transform2.rotation.y = glm::radians(45.0f); // Rotate 45 degrees
-  transform2.scale = glm::vec3(0.5f);
-  
-  Transform transform3;
-  transform3.position = glm::vec3(0.0f, 1.0f, 1.0f); // Elevated
-  transform3.rotation.x = glm::radians(15.0f);
-  transform3.scale = glm::vec3(0.4f);
-  
-  // Load models with custom transforms - each gets its own instance
-  Entity backpack1 = ResourceManager::loadModel(m_Scene, backpackPath, &transform1);
-  Entity backpack2 = ResourceManager::loadModel(m_Scene, backpackPath, &transform2);
-  Entity backpack3 = ResourceManager::loadModel(m_Scene, backpackPath, &transform3);
-  
-  // Create a simple ground plane
-  CreateGroundPlane();
+  // Backpacks spread along -Z so that every cascade has something to show
+  const std::string backpack = Config::getModelPath() + "backpack/backpack.obj";
+  ModelImportOptions backpackImport;
+  backpackImport.flipUVs = true; // authored with a top-left UV origin
+  constexpr int kRows = 6;
+  for (int row = 0; row < kRows; ++row) {
+    for (int column = -1; column <= 1; ++column) {
+      Transform transform;
+      const auto distance = static_cast<float>(row * row) * 2.5f;
+      transform.position = {static_cast<float>(column) * 3.0f + 0.2f * row,
+                            0.0f, -distance};
+      transform.rotation.y = glm::radians(35.0f * (row + column));
+      transform.scale = glm::vec3(0.5f);
+      ResourceManager::instantiateModel(m_Scene, backpack, transform,
+                                        backpackImport);
+    }
+  }
+
+  // One raised and tilted to check shadows cast onto other objects
+  Transform floating;
+  floating.position = {0.0f, 1.2f, 1.0f};
+  floating.rotation.x = glm::radians(15.0f);
+  floating.scale = glm::vec3(0.4f);
+  ResourceManager::instantiateModel(m_Scene, backpack, floating,
+                                    backpackImport);
+
+  CreateGroundPlane(100.0f);
+
+  m_Camera = Camera({0.0f, 2.0f, 7.0f}, {0.0f, 1.0f, 0.0f}, -90.0f, -12.0f);
 }
 
-void Application::CreateGroundPlane() {
-  // Create vertices for a large ground plane
-  std::vector<Vertex> vertices = {
-    // Position                    Normal              Tangent             Bitangent           TexCoords
-    {{-10.0f, -1.0f, -10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-    {{ 10.0f, -1.0f, -10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {5.0f, 0.0f}},
-    {{ 10.0f, -1.0f,  10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {5.0f, 5.0f}},
-    {{-10.0f, -1.0f,  10.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 5.0f}}
-  };
-  
-  std::vector<unsigned int> indices = {
-    0, 1, 2,  // First triangle
-    2, 3, 0   // Second triangle
-  };
-  
-  // Create a simple material (you might want to load a texture for this)
+void Application::SetupModelScene(const std::string &path, const float scale,
+                                  const ModelImportOptions &import) {
+  Transform transform;
+  transform.scale = glm::vec3(scale);
+  ResourceManager::instantiateModel(m_Scene, path, transform, import);
+
+  // Look at the model from its front (+Z side), slightly from above
+  const auto model = ResourceManager::loadModel(path, import);
+  const glm::vec3 center = (model->boundsMin + model->boundsMax) * 0.5f * scale;
+  const float radius =
+      glm::length(model->boundsMax - model->boundsMin) * 0.5f * scale;
+  const glm::vec3 position =
+      center + glm::vec3(0.0f, 0.4f, 1.0f) * radius * 1.6f;
+  const glm::vec3 toCenter = glm::normalize(center - position);
+  m_Camera = Camera(position, glm::vec3(0.0f, 1.0f, 0.0f), -90.0f,
+                    glm::degrees(std::asin(toCenter.y)));
+}
+
+void Application::CreateGroundPlane(const float halfSize) {
+  constexpr float y = -1.0f;
+  const float uvScale = halfSize / 2.0f;
+  const glm::vec3 up(0.0f, 1.0f, 0.0f);
+  const glm::vec3 tangent(1.0f, 0.0f, 0.0f);
+  const glm::vec3 bitangent(0.0f, 0.0f, -1.0f);
+
+  const std::vector<Vertex> vertices = {
+      {{-halfSize, y, halfSize}, up, tangent, bitangent, {0.0f, 0.0f}},
+      {{halfSize, y, halfSize}, up, tangent, bitangent, {uvScale, 0.0f}},
+      {{halfSize, y, -halfSize}, up, tangent, bitangent, {uvScale, uvScale}},
+      {{-halfSize, y, -halfSize}, up, tangent, bitangent, {0.0f, uvScale}}};
+  const std::vector<unsigned int> indices = {0, 1, 2, 2, 3, 0};
+
   auto material = std::make_shared<Material>();
-  
-  // Create the mesh
-  auto planeMesh = std::make_shared<Mesh>(vertices, indices, material);
-  GLObjectDestroyer::getInstance().registerMesh(planeMesh);
-  
-  // Create entity for the ground plane
-  Entity groundPlane = m_Scene.createEntity("GroundPlane");
-  groundPlane.addComponent<Transform>(); // Default transform (at origin)
-  groundPlane.addComponent<MeshRenderer>(planeMesh, material);
+  material->setAlbedo(glm::vec3(0.25f));
+  material->setSpecular(glm::vec3(0.05f));
+
+  Entity ground = m_Scene.createEntity("Ground");
+  ground.addComponent<Transform>();
+  ground.addComponent<MeshRenderer>(std::make_shared<Mesh>(vertices, indices),
+                                    material);
 }
 
 void Application::Cleanup() {
-  Logger::get()->info("Shutting down application...");
+  // GPU objects must be released while the context is still alive: the
+  // renderer first, then everything the scene and the caches keep alive.
+  m_Renderer.reset();
+  m_Scene.clear();
+  ResourceManager::clearCache();
+  Material::releaseDefaultTextures();
 
-  // Clean up renderer resources first
-  if (m_Renderer) {
-    m_Renderer->cleanup();
-    m_Renderer.reset();
-  }
-
-  // Clean up OpenGL objects
-  GLObjectDestroyer::getInstance().cleanupAll();
-
-  // Clean up GLFW resources
   if (m_Window) {
     glfwDestroyWindow(m_Window);
     m_Window = nullptr;
   }
-
   glfwTerminate();
-
-  Logger::get()->info("Application shutdown complete");
 }

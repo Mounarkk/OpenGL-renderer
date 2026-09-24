@@ -1,53 +1,28 @@
 #include "Mesh.h"
 
-#include "GLFW/glfw3.h"
-
 Mesh::Mesh(const std::vector<Vertex> &vertices,
-           const std::vector<unsigned int> &indices,
-           const std::shared_ptr<Material> &material)
-    : mMaterial(material) {
-  // Create buffers
-  mVBO = std::make_unique<VertexBuffer>(vertices.data(),
-                                        vertices.size() * sizeof(Vertex));
-  mIBO = std::make_unique<IndexBuffer>(indices.data(), indices.size());
-
-  // Set up vertex layout (position, normal, texture coordinates)
-  // Define vertex layout
-  VertexBufferLayout layout;
-  layout.Push(GL_FLOAT, 3);
-  layout.Push(GL_FLOAT, 3);
-  layout.Push(GL_FLOAT, 3);
-  layout.Push(GL_FLOAT, 3);
-  layout.Push(GL_FLOAT, 2);
-
-  // Create VAO
+           const std::vector<unsigned int> &indices) {
   mVAO = std::make_unique<VertexArray>();
+  mVAO->bind();
+
+  mVBO = std::make_unique<VertexBuffer>(
+      vertices.data(),
+      static_cast<GLsizeiptr>(vertices.size() * sizeof(Vertex)));
+  mIBO = std::make_unique<IndexBuffer>(indices.data(),
+                                       static_cast<GLsizei>(indices.size()));
+
+  VertexBufferLayout layout;
+  layout.push(GL_FLOAT, 3); // position
+  layout.push(GL_FLOAT, 3); // normal
+  layout.push(GL_FLOAT, 3); // tangent
+  layout.push(GL_FLOAT, 3); // bitangent
+  layout.push(GL_FLOAT, 2); // texCoords
   mVAO->addBuffer(*mVBO, layout);
 
-  mDestroyed = false;
-}
-
-Mesh::~Mesh() {
-  if (!mDestroyed && glfwGetCurrentContext()) {
-    clean();
-  }
+  VertexArray::unbind();
 }
 
 void Mesh::draw() const {
-  // mMaterial->bind();
   mVAO->bind();
-  mVBO->Bind();
-  mIBO->bind();
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(mIBO->getCount()),
-                 GL_UNSIGNED_INT, nullptr);
-}
-
-void Mesh::clean() {
-  // Only cleans VAO, VBO and IBO; textures and shaders will be cleaned
-  // afterward
-  mVAO->clean();
-  mVBO->clean();
-  mIBO->clean();
-
-  mDestroyed = true;
+  glDrawElements(GL_TRIANGLES, mIBO->getCount(), GL_UNSIGNED_INT, nullptr);
 }

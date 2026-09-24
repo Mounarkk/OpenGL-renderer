@@ -1,181 +1,94 @@
 #pragma once
-#include "../core/Config.h"
-#include "../core/Logger.h"
 #include "../input/InputHandler.h"
 #include "../rendering/Renderer.h"
+#include "../resource/Model.h"
 #include "../scene/Camera.h"
 #include "../scene/Scene.h"
+
 #include <GLFW/glfw3.h>
-#include <glm.hpp>
+
+#include <memory>
+#include <string>
+
+/// Startup options, filled from the command line.
+struct ApplicationOptions {
+  /// When set, a few frames are rendered, saved to this PNG, and the
+  /// application exits. Handy to produce screenshots from a script.
+  std::string screenshotPath;
+
+  /// Model to display instead of the default test scene.
+  std::string modelPath;
+  float modelScale = 1.0f;
+  ModelImportOptions modelImport;
+
+  /// Initial camera placement. When unset, the camera frames the model.
+  bool hasCameraOverride = false;
+  glm::vec3 cameraPosition{0.0f};
+  float cameraYaw = -90.0f;
+  float cameraPitch = 0.0f;
+
+  /// Starts with the cascade debug view enabled.
+  bool showCascades = false;
+};
 
 /**
- * Main application class that manages the window, input, and main loop.
+ * Owns the window, the scene and the renderer, and runs the main loop.
  *
- * The Application class serves as the central coordinator for the entire
- * renderer. It manages the GLFW window, processes user input (keyboard and
- * mouse), coordinates the scene and renderer, and runs the main game loop.
- *
- * Key responsibilities:
- * - Window creation and management
- * - Input processing and camera controls
- * - Main loop timing and coordination
- * - Scene and renderer lifecycle management
- *
- * Ownership Patterns:
- * - Owns the renderer via std::unique_ptr (exclusive ownership)
- * - Does NOT own the GLFW window (managed by GLFW library)
- * - Owns scene, camera, and input handler by value (automatic cleanup)
- * - Responsible for coordinating cleanup of all owned resources
+ * Controls:
+ *   WASD / Space / Ctrl   move, Shift to go faster
+ *   Mouse / Scroll        look around / zoom
+ *   Left / Right arrows   rotate the sun
+ *   C                     toggle the shadow cascade debug view
+ *   F12                   save a screenshot
+ *   Escape                quit
  */
 class Application {
 public:
-  /**
-   * Constructs the application with default settings from configuration.
-   * Window dimensions and other settings are loaded from the config file.
-   * @param title Window title displayed in the title bar
-   */
-  explicit Application(std::string title);
-
-  /**
-   * Constructs the application with specified window dimensions and title.
-   * @param width Initial window width in pixels
-   * @param height Initial window height in pixels
-   * @param title Window title displayed in the title bar
-   */
-  Application(int width, int height, std::string title);
-
-  /**
-   * Destructor that cleans up GLFW resources and terminates the application.
-   */
+  explicit Application(std::string title, ApplicationOptions options = {});
   ~Application();
 
-  /**
-   * Starts the main application loop.
-   * This method initializes all systems, then runs the main loop until
-   * the user closes the window. Handles timing, input, updates, and rendering.
-   */
+  Application(const Application &) = delete;
+  Application &operator=(const Application &) = delete;
+
   void Run();
 
 private:
-  /**
-   * Initializes GLFW, creates the window, and sets up OpenGL context.
-   * Also initializes GLAD and sets up initial OpenGL state.
-   */
   void Initialize();
-
-  /**
-   * Processes all input using the InputHandler.
-   * Delegates input processing to the InputHandler instance.
-   */
   void ProcessInput();
-
-  /**
-   * Updates the scene and all game systems.
-   * @param deltaTime Time elapsed since the last frame in seconds
-   */
-  void Update(float deltaTime);
-
-  /**
-   * Renders the current frame.
-   * Coordinates between the scene and renderer to draw all visible objects.
-   */
   void Render();
-
-  /**
-   * Sets up the camera matrices for rendering.
-   * Calculates view and projection matrices based on current camera state.
-   */
-  void SetupCameraMatrices();
-
-  /**
-   * Submits all renderable objects from the scene to the renderer.
-   * Prepares the render command queue with scene data.
-   */
-  void SubmitRenderables();
-
-  /**
-   * Executes the rendering pipeline.
-   * Flushes all render commands and draws the frame.
-   */
-  void ExecuteRendering();
-
-  /**
-   * Cleans up all application resources properly.
-   * Ensures all systems are shut down in the correct order.
-   */
   void Cleanup();
 
-  // GLFW Callbacks - these must be static for GLFW compatibility
+  [[nodiscard]] FrameContext BuildFrameContext() const;
 
-  /**
-   * GLFW callback for window resize events.
-   * Updates the OpenGL viewport when the window is resized.
-   * @param window The GLFW window that was resized
-   * @param width New window width in pixels
-   * @param height New window height in pixels
-   */
+  /// Reads the window back buffer and writes it as a PNG.
+  void SaveScreenshot(const std::string &path) const;
+
+  void SetupShadowTestScene();
+  void SetupModelScene(const std::string &path, float scale,
+                       const ModelImportOptions &import);
+  void CreateGroundPlane(float halfSize);
+
   static void FrameBufferSizeCallback(GLFWwindow *window, int width,
                                       int height);
-
-  /**
-   * GLFW callback for mouse movement events.
-   * @param window The GLFW window receiving the event
-   * @param xPos Mouse X position in screen coordinates
-   * @param yPos Mouse Y position in screen coordinates
-   */
   static void MouseCallback(GLFWwindow *window, double xPos, double yPos);
-
-  /**
-   * GLFW callback for mouse scroll events.
-   * @param window The GLFW window receiving the event
-   * @param xOffset Horizontal scroll offset (usually 0)
-   * @param yOffset Vertical scroll offset (positive = scroll up)
-   */
   static void ScrollCallback(GLFWwindow *window, double xOffset,
                              double yOffset);
+  static void KeyCallback(GLFWwindow *window, int key, int scancode, int action,
+                          int mods);
 
-  /**
-   * Handles mouse movement by delegating to InputHandler.
-   * @param xPos Current mouse X position
-   * @param yPos Current mouse Y position
-   */
-  void HandleMouseInput(double xPos, double yPos);
-
-  /**
-   * Handles mouse scroll by delegating to InputHandler.
-   * @param xOffset Horizontal scroll offset (unused)
-   * @param yOffset Vertical scroll offset for zoom
-   */
-  void HandleScrollInput(double xOffset, double yOffset);
-
-  /**
-   * Sets up a test scene with multiple backpacks and a ground plane for shadow testing.
-   */
-  void SetupShadowTestScene();
-
-  /**
-   * Creates a simple ground plane for shadow testing.
-   */
-  void CreateGroundPlane();
-
-  // Window and input
-  GLFWwindow *m_Window;
-  int m_Width, m_Height;
+  GLFWwindow *m_Window = nullptr;
+  int m_Width;
+  int m_Height;
   std::string m_Title;
+  ApplicationOptions m_Options;
 
-  // Camera and input
   Camera m_Camera;
   InputHandler m_InputHandler;
+  Scene m_Scene;
+  std::unique_ptr<Renderer> m_Renderer;
 
-  // Timing
   float m_DeltaTime = 0.0f;
   float m_LastFrame = 0.0f;
-
-  // Scene and systems
-  Scene m_Scene;
-  std::unique_ptr<ForwardRenderer> m_Renderer;
-
-  // Rendering state
-  glm::mat4 m_ViewMatrix;
-  glm::mat4 m_ProjectionMatrix;
+  bool m_ShowCascades = false;
+  bool m_ScreenshotRequested = false;
 };

@@ -1,22 +1,31 @@
 #pragma once
-#include "../gl/Texture.h"
+#include "../gl/Shader.h"
 #include "../gl/VertexArray.h"
 #include "../gl/VertexBuffer.h"
+
 #include <memory>
+#include <string>
 
-#include "../gl/Shader.h"
-#include <fwd.hpp>
-
+/**
+ * Cube map drawn behind everything else.
+ *
+ * Expects right, left, top, bottom, front and back .jpg faces in the given
+ * directory. It is drawn last with GL_LEQUAL so it only fills pixels that no
+ * geometry wrote to.
+ */
 class Skybox {
 public:
-  Skybox();
-  void render(const glm::mat4 &projMat, const glm::mat4 &viewMat) const;
-  void clean();
+  explicit Skybox(const std::string &directory);
   ~Skybox();
 
+  Skybox(const Skybox &) = delete;
+  Skybox &operator=(const Skybox &) = delete;
+
+  void render(const glm::mat4 &projMat, const glm::mat4 &viewMat) const;
+
 private:
-  unsigned int mCubeMapTexID;
+  GLuint mCubeMapTexID = 0;
   std::unique_ptr<VertexArray> mVAO;
   std::unique_ptr<VertexBuffer> mVBO;
-  std::unique_ptr<Shader> mSkyboxShader;
+  std::unique_ptr<Shader> mShader;
 };

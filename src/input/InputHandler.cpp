@@ -1,56 +1,52 @@
 #include "InputHandler.h"
 
-InputHandler::InputHandler()
-    : m_LastX(0.0f), m_LastY(0.0f), m_FirstMouse(true) {}
-
-void InputHandler::initialize(int windowWidth, int windowHeight) {
-  m_LastX = static_cast<float>(windowWidth) / 2.0f;
-  m_LastY = static_cast<float>(windowHeight) / 2.0f;
-  m_FirstMouse = true;
+namespace {
+constexpr float kSprintMultiplier = 4.0f;
 }
 
 void InputHandler::processInput(GLFWwindow *window, Camera &camera,
                                 float deltaTime) {
-  // Handle application control
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, true);
-  }
 
-  // Handle camera movement
-  if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-    camera.processKeyboard(FORWARD, deltaTime);
-  }
-  if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-    camera.processKeyboard(BACKWARD, deltaTime);
-  }
-  if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-    camera.processKeyboard(LEFT, deltaTime);
-  }
-  if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-    camera.processKeyboard(RIGHT, deltaTime);
-  }
+  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+    deltaTime *= kSprintMultiplier;
+
+  const auto held = [window](const int key) {
+    return glfwGetKey(window, key) == GLFW_PRESS;
+  };
+
+  if (held(GLFW_KEY_W))
+    camera.processKeyboard(CameraMovement::Forward, deltaTime);
+  if (held(GLFW_KEY_S))
+    camera.processKeyboard(CameraMovement::Backward, deltaTime);
+  if (held(GLFW_KEY_A))
+    camera.processKeyboard(CameraMovement::Left, deltaTime);
+  if (held(GLFW_KEY_D))
+    camera.processKeyboard(CameraMovement::Right, deltaTime);
+  if (held(GLFW_KEY_SPACE))
+    camera.processKeyboard(CameraMovement::Up, deltaTime);
+  if (held(GLFW_KEY_LEFT_CONTROL))
+    camera.processKeyboard(CameraMovement::Down, deltaTime);
 }
 
-void InputHandler::handleMouseMovement(double xPos, double yPos,
+void InputHandler::handleMouseMovement(const double xPos, const double yPos,
                                        Camera &camera) {
+  const auto x = static_cast<float>(xPos);
+  const auto y = static_cast<float>(yPos);
+
   if (m_FirstMouse) {
-    m_LastX = static_cast<float>(xPos);
-    m_LastY = static_cast<float>(yPos);
+    m_LastX = x;
+    m_LastY = y;
     m_FirstMouse = false;
   }
 
-  const float xOffset = static_cast<float>(xPos) - m_LastX;
-  const float yOffset =
-      m_LastY - static_cast<float>(
-                    yPos); // Reversed since y-coordinates go from bottom to top
-
-  m_LastX = static_cast<float>(xPos);
-  m_LastY = static_cast<float>(yPos);
-
-  camera.processMouseMovement(xOffset, yOffset);
+  // Screen Y grows downwards, pitch grows upwards
+  camera.processMouseMovement(x - m_LastX, m_LastY - y);
+  m_LastX = x;
+  m_LastY = y;
 }
 
-void InputHandler::handleMouseScroll(double xOffset, double yOffset,
-                                     Camera &camera) {
+void InputHandler::handleMouseScroll(const double yOffset, Camera &camera) {
   camera.processMouseScroll(static_cast<float>(yOffset));
 }

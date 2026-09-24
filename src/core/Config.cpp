@@ -3,18 +3,28 @@
 
 #include <algorithm>
 #include <fstream>
-#include <sstream>
 
-// Static member definitions
+#ifndef RENDERER_ROOT_DIR
+#define RENDERER_ROOT_DIR "."
+#endif
+
 std::unordered_map<std::string, std::string> Config::s_ConfigValues;
-bool Config::s_Loaded = false;
+
+namespace {
+std::string trim(const std::string &str) {
+  const size_t first = str.find_first_not_of(" \t\r\n");
+  if (first == std::string::npos)
+    return "";
+  const size_t last = str.find_last_not_of(" \t\r\n");
+  return str.substr(first, last - first + 1);
+}
+} // namespace
 
 bool Config::load(const std::string &configPath) {
   std::ifstream file(configPath);
   if (!file.is_open()) {
-    Logger::get()->warn("Could not open config file: {}", configPath);
-    Logger::get()->info("Using default configuration values");
-    s_Loaded = true; // Still mark as loaded to use defaults
+    Logger::get()->warn("Could not open config file {}, using defaults",
+                        configPath);
     return false;
   }
 
@@ -24,60 +34,64 @@ bool Config::load(const std::string &configPath) {
 
   while (std::getline(file, line)) {
     lineNumber++;
-
-    // Remove leading/trailing whitespace
-    line.erase(0, line.find_first_not_of(" \t\r\n"));
-    line.erase(line.find_last_not_of(" \t\r\n") + 1);
-
-    // Skip empty lines and comments
-    if (line.empty() || line[0] == '#') {
+    line = trim(line);
+    if (line.empty() || line[0] == '#')
       continue;
-    }
 
-    // Find the '=' separator
-    size_t equalPos = line.find('=');
+    const size_t equalPos = line.find('=');
     if (equalPos == std::string::npos) {
       Logger::get()->warn("Invalid config line {} in {}: {}", lineNumber,
                           configPath, line);
       continue;
     }
 
-    // Extract key and value
-    std::string key = line.substr(0, equalPos);
-    std::string value = line.substr(equalPos + 1);
-
-    // Trim whitespace from key and value
-    key.erase(0, key.find_first_not_of(" \t"));
-    key.erase(key.find_last_not_of(" \t") + 1);
-    value.erase(0, value.find_first_not_of(" \t"));
-    value.erase(value.find_last_not_of(" \t") + 1);
-
-    if (!key.empty()) {
+    const std::string key = trim(line.substr(0, equalPos));
+    const std::string value = trim(line.substr(equalPos + 1));
+    if (!key.empty())
       s_ConfigValues[key] = value;
-      Logger::get()->debug("Config: {} = {}", key, value);
-    }
   }
 
-  file.close();
-  s_Loaded = true;
-  Logger::get()->info("Configuration loaded from: {}", configPath);
+  Logger::get()->info("Configuration loaded from {}", configPath);
   return true;
 }
 
-int Config::getWindowWidth() { return getInt("window.width", 800); }
+std::string Config::getRootPath() {
+  std::string root = RENDERER_ROOT_DIR;
+  if (root.back() != '/')
+    root += '/';
+  return root;
+}
 
-int Config::getWindowHeight() { return getInt("window.height", 600); }
+std::string Config::resolvePath(const std::string &path) {
+  if (!path.empty() && path[0] == '/')
+    return path;
+  return getRootPath() + path;
+}
+
+int Config::getWindowWidth() { return getInt("window.width", 1280); }
+
+int Config::getWindowHeight() { return getInt("window.height", 720); }
+
+bool Config::getVSyncEnabled() { return getBool("renderer.vsync", true); }
 
 std::string Config::getShaderPath() {
-  return getString("paths.shaders", "../res/shaders/");
+  return resolvePath(getString("paths.shaders", "res/shaders/"));
 }
 
 std::string Config::getModelPath() {
-  return getString("paths.models", "../res/models/");
+  return resolvePath(getString("paths.models", "res/models/"));
 }
 
 std::string Config::getTexturePath() {
-  return getString("paths.textures", "../res/textures/");
+  return resolvePath(getString("paths.textures", "res/textures/"));
+}
+
+std::string Config::getSkyboxPath() {
+  return resolvePath(getString("paths.skybox", "res/skyboxes/arctic/"));
+}
+
+std::string Config::getScreenshotPath() {
+  return resolvePath(getString("paths.screenshots", "screenshots/"));
 }
 
 float Config::getCameraFOV() { return getFloat("camera.fov", 45.0f); }
@@ -96,61 +110,47 @@ float Config::getCameraFarPlane() {
   return getFloat("camera.far_plane", 100.0f);
 }
 
-bool Config::getVSyncEnabled() { return getBool("renderer.vsync", true); }
+int Config::getShadowMapSize() { return getInt("shadow.map_size", 2048); }
 
 std::string Config::getString(const std::string &key,
                               const std::string &defaultValue) {
-  if (!s_Loaded) {
-    Logger::get()->warn("Config not loaded, using default for {}", key);
-    return defaultValue;
-  }
-
-  auto it = s_ConfigValues.find(key);
-  if (it != s_ConfigValues.end()) {
-    return it->second;
-  }
-
-  Logger::get()->debug("Config key '{}' not found, using default: {}", key,
-                       defaultValue);
-  return defaultValue;
+  const auto it = s_ConfigValues.find(key);
+  return it != s_ConfigValues.end() ? it->second : defaultValue;
 }
 
-int Config::getInt(const std::string &key, int defaultValue) {
-  std::string value = getString(key, std::to_string(defaultValue));
+int Config::getInt(const std::string &key, const int defaultValue) {
+  const std::string value = getString(key, std::to_string(defaultValue));
   try {
     return std::stoi(value);
-  } catch (const std::exception &e) {
-    Logger::get()->warn("Invalid integer value for {}: '{}', using default: {}",
-                        key, value, defaultValue);
+  } catch (const std::exception &) {
+    Logger::get()->warn("Invalid integer for {}: '{}', using {}", key, value,
+                        defaultValue);
     return defaultValue;
   }
 }
 
-float Config::getFloat(const std::string &key, float defaultValue) {
-  std::string value = getString(key, std::to_string(defaultValue));
+float Config::getFloat(const std::string &key, const float defaultValue) {
+  const std::string value = getString(key, std::to_string(defaultValue));
   try {
     return std::stof(value);
-  } catch (const std::exception &e) {
-    Logger::get()->warn("Invalid float value for {}: '{}', using default: {}",
-                        key, value, defaultValue);
+  } catch (const std::exception &) {
+    Logger::get()->warn("Invalid float for {}: '{}', using {}", key, value,
+                        defaultValue);
     return defaultValue;
   }
 }
 
-bool Config::getBool(const std::string &key, bool defaultValue) {
+bool Config::getBool(const std::string &key, const bool defaultValue) {
   std::string value = getString(key, defaultValue ? "true" : "false");
+  std::transform(value.begin(), value.end(), value.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
 
-  // Convert to lowercase for comparison
-  std::transform(value.begin(), value.end(), value.begin(), ::tolower);
-
-  if (value == "true" || value == "1" || value == "yes" || value == "on") {
+  if (value == "true" || value == "1" || value == "yes" || value == "on")
     return true;
-  } else if (value == "false" || value == "0" || value == "no" ||
-             value == "off") {
+  if (value == "false" || value == "0" || value == "no" || value == "off")
     return false;
-  } else {
-    Logger::get()->warn("Invalid boolean value for {}: '{}', using default: {}",
-                        key, value, defaultValue ? "true" : "false");
-    return defaultValue;
-  }
+
+  Logger::get()->warn("Invalid boolean for {}: '{}', using {}", key, value,
+                      defaultValue);
+  return defaultValue;
 }

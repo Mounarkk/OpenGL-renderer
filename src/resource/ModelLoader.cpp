@@ -1,112 +1,114 @@
 #include "ModelLoader.h"
+#include "../core/Logger.h"
 #include "../core/RendererException.h"
+#include "ResourceManager.h"
 
-#include "../gl/GLObjectDestroyer.h"
+#include <assimp/Importer.hpp>
+#include <assimp/config.h>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
-Entity ModelLoader::load(Scene &scene, std::string &path, 
-                        const Transform* customTransform) {
-  Assimp::Importer importer;
-  const aiScene *aiScene =
-      importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs |
-                                  aiProcess_CalcTangentSpace);
+#include <limits>
 
-  if (!aiScene || aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE ||
-      !aiScene->mRootNode) {
-    Logger::get()->error("Failed to load model: {}", importer.GetErrorString());
-    throw ResourceException(path, "Assimp loading failed: " +
-                                      std::string(importer.GetErrorString()));
-  }
+namespace {
+// No aiProcess_FlipUVs: Assimp already gives every format bottom-left UVs,
+// which matches the vertically flipped images produced by Texture.
+constexpr unsigned int kImportFlags =
+    aiProcess_Triangulate | aiProcess_GenSmoothNormals |
+    aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices |
+    aiProcess_PreTransformVertices | aiProcess_SortByPType |
+    aiProcess_ImproveCacheLocality;
 
-  // Get the object path
-  if (const size_t last_slash = path.find_last_of('/');
-      last_slash != std::string::npos) {
-    path = path.substr(0, last_slash + 1);
-  }
+constexpr float kMaxSmoothingAngle = 60.0f;
 
-  const Entity root = scene.createEntity("ModelRoot");
-  processNode(aiScene->mRootNode, aiScene, scene, root, path, customTransform);
-  return root;
+std::string directoryOf(const std::string &path) {
+  const size_t lastSlash = path.find_last_of("/\\");
+  return lastSlash == std::string::npos ? "" : path.substr(0, lastSlash + 1);
 }
 
-void ModelLoader::processNode(const aiNode *node, const aiScene *aiScene,
-                              Scene &scene, Entity parent,
-                              const std::string &path,
-                              const Transform* customTransform) {
-  // Create an entity for this node
-  Entity entity = scene.createEntity(node->mName.C_Str());
-  // Add default transform component (nodes don't get custom transform, only meshes do)
-  entity.addComponent<Transform>();
-
-  // Process meshes - pass custom transform to mesh entities
-  for (unsigned i = 0; i < node->mNumMeshes; i++) {
-    aiMesh *mesh = aiScene->mMeshes[node->mMeshes[i]];
-    // Process mesh for this node, applying custom transform to mesh entities
-    processMesh(mesh, aiScene, scene, entity, path, customTransform);
-  }
-
-  // Process children - pass custom transform down the hierarchy
-  for (unsigned i = 0; i < node->mNumChildren; i++) {
-    processNode(node->mChildren[i], aiScene, scene, entity, path, customTransform);
-  }
-}
-
-Entity ModelLoader::processMesh(const aiMesh *mesh, const aiScene *aiScene,
-                                Scene &scene, Entity parent,
-                                const std::string &path,
-                                const Transform* customTransform) {
-  // Convert Assimp mesh to our Mesh class
+std::shared_ptr<Mesh> convertMesh(const aiMesh &mesh) {
   std::vector<Vertex> vertices;
-  std::vector<unsigned int> indices;
+  vertices.reserve(mesh.mNumVertices);
 
-  // Process vertices
-  for (unsigned i = 0; i < mesh->mNumVertices; i++) {
+  for (unsigned int i = 0; i < mesh.mNumVertices; ++i) {
     Vertex vertex{};
-    vertex.position = {mesh->mVertices[i].x, mesh->mVertices[i].y,
-                       mesh->mVertices[i].z};
-    if (mesh->HasNormals()) {
-      vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y,
-                       mesh->mNormals[i].z};
+    vertex.position = {mesh.mVertices[i].x, mesh.mVertices[i].y,
+                       mesh.mVertices[i].z};
+    if (mesh.HasNormals())
+      vertex.normal = {mesh.mNormals[i].x, mesh.mNormals[i].y,
+                       mesh.mNormals[i].z};
+    if (mesh.HasTangentsAndBitangents()) {
+      vertex.tangent = {mesh.mTangents[i].x, mesh.mTangents[i].y,
+                        mesh.mTangents[i].z};
+      vertex.bitangent = {mesh.mBitangents[i].x, mesh.mBitangents[i].y,
+                          mesh.mBitangents[i].z};
     }
-    if (mesh->HasTangentsAndBitangents()) {
-      vertex.tangent = {mesh->mTangents[i].x, mesh->mTangents[i].y,
-                        mesh->mTangents[i].z};
-      vertex.bitangent = {mesh->mBitangents[i].x, mesh->mBitangents[i].y,
-                          mesh->mBitangents[i].z};
-    }
-    if (mesh->mTextureCoords[0]) {
-      vertex.texCoords = {mesh->mTextureCoords[0][i].x,
-                          mesh->mTextureCoords[0][i].y};
-    } else {
-      vertex.texCoords = {0.0f, 0.0f};
-    }
+    if (mesh.HasTextureCoords(0))
+      vertex.texCoords = {mesh.mTextureCoords[0][i].x,
+                          mesh.mTextureCoords[0][i].y};
     vertices.push_back(vertex);
   }
 
-  // Process indices
-  for (unsigned i = 0; i < mesh->mNumFaces; i++) {
-    const aiFace face = mesh->mFaces[i];
-    for (unsigned j = 0; j < face.mNumIndices; j++) {
+  std::vector<unsigned int> indices;
+  indices.reserve(static_cast<size_t>(mesh.mNumFaces) * 3);
+  for (unsigned int i = 0; i < mesh.mNumFaces; ++i) {
+    const aiFace &face = mesh.mFaces[i];
+    for (unsigned int j = 0; j < face.mNumIndices; ++j)
       indices.push_back(face.mIndices[j]);
+  }
+
+  return std::make_shared<Mesh>(vertices, indices);
+}
+} // namespace
+
+std::shared_ptr<Model> ModelLoader::load(const std::string &path,
+                                         const ModelImportOptions &options) {
+  Assimp::Importer importer;
+  // Normals generated for files that lack them are only smoothed across
+  // edges sharper than this angle, so boxes and walls keep hard edges.
+  importer.SetPropertyFloat(AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE,
+                            kMaxSmoothingAngle);
+  const unsigned int flags =
+      kImportFlags | (options.flipUVs ? aiProcess_FlipUVs : 0u);
+  const aiScene *scene = importer.ReadFile(path, flags);
+
+  if (!scene || (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) ||
+      !scene->mRootNode)
+    throw ResourceException(path, std::string("Assimp: ") +
+                                      importer.GetErrorString());
+
+  const std::string directory = directoryOf(path);
+
+  // Materials are shared between the meshes that reference them
+  std::vector<std::shared_ptr<Material>> materials(scene->mNumMaterials);
+  for (unsigned int i = 0; i < scene->mNumMaterials; ++i)
+    materials[i] =
+        ResourceManager::loadMaterial(*scene->mMaterials[i], directory);
+
+  auto model = std::make_shared<Model>();
+  glm::vec3 boundsMin(std::numeric_limits<float>::max());
+  glm::vec3 boundsMax(std::numeric_limits<float>::lowest());
+  for (unsigned int i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh &mesh = *scene->mMeshes[i];
+    if (!(mesh.mPrimitiveTypes & aiPrimitiveType_TRIANGLE))
+      continue; // Point clouds and lines left by SortByPType
+
+    model->subMeshes.push_back({mesh.mName.C_Str(), convertMesh(mesh),
+                                materials[mesh.mMaterialIndex]});
+
+    for (unsigned int v = 0; v < mesh.mNumVertices; ++v) {
+      const glm::vec3 p(mesh.mVertices[v].x, mesh.mVertices[v].y,
+                        mesh.mVertices[v].z);
+      boundsMin = glm::min(boundsMin, p);
+      boundsMax = glm::max(boundsMax, p);
     }
   }
-
-  // Load material
-  const aiMaterial *aiMaterial = aiScene->mMaterials[mesh->mMaterialIndex];
-  auto material = ResourceManager::loadMaterial(aiMaterial, path);
-
-  // Create a Mesh and assign it to an entity
-  auto myMesh = std::make_shared<Mesh>(vertices, indices, material);
-  GLObjectDestroyer::getInstance().registerMesh(myMesh);
-
-  Entity meshEntity = scene.createEntity(mesh->mName.C_Str());
-  
-  // Apply custom transform to mesh entity if provided, otherwise use default
-  if (customTransform) {
-    meshEntity.addComponent<Transform>(*customTransform);
-  } else {
-    meshEntity.addComponent<Transform>();
+  if (!model->subMeshes.empty()) {
+    model->boundsMin = boundsMin;
+    model->boundsMax = boundsMax;
   }
-  
-  meshEntity.addComponent<MeshRenderer>(myMesh, material);
-  return meshEntity;
+
+  Logger::get()->info("Loaded model {} ({} meshes, {} materials)", path,
+                      model->subMeshes.size(), materials.size());
+  return model;
 }

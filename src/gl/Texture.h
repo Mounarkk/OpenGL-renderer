@@ -1,58 +1,44 @@
 #pragma once
-#include "../core/Logger.h"
 #include <glad/glad.h>
+#include <glm.hpp>
+
 #include <string>
 
 /**
- * OpenGL texture wrapper for loading and managing 2D textures.
+ * 2D texture loaded from an image file with stb_image, or created as a single
+ * texel of constant color (used as a neutral default for missing maps).
  *
- * The Texture class handles loading images from files and creating OpenGL
- * texture objects. It supports common image formats through stb_image and
- * provides automatic texture parameter setup for typical use cases. The class
- * handles both sRGB and linear color spaces and manages texture binding for
- * shader usage.
- *
- * Key features:
- * - Automatic image loading from common formats (PNG, JPG, etc.)
- * - sRGB color space support for proper gamma correction
- * - Texture unit binding for multi-texture rendering
- * - Automatic mipmap generation and filtering setup
- * - RAII resource management
+ * Mipmaps are generated and sampling is trilinear with repeat wrapping.
  */
 class Texture {
 public:
   /**
-   * Loads a texture from an image file.
-   * @param path File path to the image (supports PNG, JPG, TGA, BMP, etc.)
-   * @param sRGB Whether to treat the image as sRGB color space (true for
-   * diffuse textures)
+   * Loads an image file. Throws a ResourceException if it cannot be read.
+   * @param path Image path (PNG, JPG, TGA, BMP...)
+   * @param sRGB True for color data (albedo), false for data maps (normals,
+   * specular...). Only applies to 3 and 4 channel images.
    */
-  explicit Texture(const std::string &path, bool sRGB);
+  Texture(const std::string &path, bool sRGB);
 
-  /**
-   * Destructor that automatically cleans up the OpenGL texture.
-   */
+  /// Creates a 1x1 texture of the given linear RGBA color.
+  explicit Texture(const glm::vec4 &color);
+
   ~Texture();
 
-  /**
-   * Manually deletes the OpenGL texture object.
-   * Called automatically by destructor.
-   */
+  Texture(const Texture &) = delete;
+  Texture &operator=(const Texture &) = delete;
+
+  /// Deletes the GL texture. Safe to call several times.
   void clean();
 
-  /**
-   * Binds this texture to the specified texture unit for rendering.
-   * @param slot Texture unit to bind to (0-31, defaults to 0)
-   */
   void bind(GLuint slot = 0) const;
 
-  /**
-   * Gets the OpenGL texture ID for advanced operations.
-   * @return OpenGL texture object ID
-   */
   [[nodiscard]] GLuint getID() const { return mID; }
+  [[nodiscard]] int getChannels() const { return mChannels; }
 
 private:
-  unsigned int mID;
-  int mWidth, mHeight, mChannels;
+  GLuint mID = 0;
+  int mWidth = 0;
+  int mHeight = 0;
+  int mChannels = 0;
 };

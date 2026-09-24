@@ -1,5 +1,4 @@
 #pragma once
-#include "../core/Logger.h"
-#include <glad/glad.h>
 
+/// Routes driver debug messages to the logger when GL_ARB_debug_output exists.
 void enableGLDebugging();

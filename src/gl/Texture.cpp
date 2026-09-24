@@ -1,71 +1,93 @@
 #include "Texture.h"
-#include "../../vendor/stb_image/stb_image.h"
+#include "../core/Logger.h"
 #include "../core/RendererException.h"
-#include "GLFW/glfw3.h"
+
+#include <GLFW/glfw3.h>
+#include <stb_image.h>
+
+namespace {
+struct PixelFormat {
+  GLint internalFormat;
+  GLenum format;
+};
+
+PixelFormat pixelFormatFor(const int channels, const bool sRGB) {
+  switch (channels) {
+  case 1:
+    return {GL_R8, GL_RED};
+  case 2:
+    return {GL_RG8, GL_RG};
+  case 3:
+    return {sRGB ? GL_SRGB8 : GL_RGB8, GL_RGB};
+  default:
+    return {sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8, GL_RGBA};
+  }
+}
+} // namespace
 
 Texture::Texture(const std::string &path, const bool sRGB) {
-  // Load image data using stb_image library
-  stbi_set_flip_vertically_on_load(
-      true); // OpenGL expects (0,0) at bottom-left, images have (0,0) at
-             // top-left
-  unsigned char *data = stbi_load(path.c_str(), &mWidth, &mHeight, &mChannels,
-                                  0); // Load with original channel count
-  if (!data) {
-    Logger::get()->error("Failed to load texture: {}", path);
-    throw ResourceException(path, "STB image loading failed: " +
-                                      std::string(stbi_failure_reason()));
-  }
+  // Image rows start at the top, OpenGL expects them to start at the bottom
+  stbi_set_flip_vertically_on_load(true);
+  unsigned char *data =
+      stbi_load(path.c_str(), &mWidth, &mHeight, &mChannels, 0);
+  if (!data)
+    throw ResourceException(path,
+                            std::string("stb_image: ") + stbi_failure_reason());
 
-  // Determine OpenGL texture formats based on channel count and color space
-  GLenum internalFormat = GL_RGB8; // Default to RGB
-  GLenum format = GL_RGB;
-  if (mChannels == 4) {
-    // RGBA texture with optional sRGB gamma correction
-    internalFormat = sRGB ? GL_SRGB8_ALPHA8 : GL_RGBA8;
-    format = GL_RGBA;
-  } else if (mChannels == 3) {
-    // RGB texture with optional sRGB gamma correction
-    internalFormat = sRGB ? GL_SRGB8 : GL_RGB8;
-    format = GL_RGB;
-  }
+  const auto [internalFormat, format] = pixelFormatFor(mChannels, sRGB);
 
-  // Create and configure OpenGL texture object
-  glGenTextures(1, &mID);            // Generate texture ID
-  glBindTexture(GL_TEXTURE_2D, mID); // Bind for configuration
-  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, mWidth, mHeight, 0,
-               format, // Upload image data to GPU
+  glGenTextures(1, &mID);
+  glBindTexture(GL_TEXTURE_2D, mID);
+
+  // Rows of 1 or 3 channel images are not necessarily 4-byte aligned
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, mWidth, mHeight, 0, format,
                GL_UNSIGNED_BYTE, data);
-  glGenerateMipmap(
-      GL_TEXTURE_2D); // Generate mipmaps for better quality at distance
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-  // Configure texture sampling parameters
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                  GL_REPEAT); // Repeat texture horizontally
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                  GL_REPEAT); // Repeat texture vertically
-  glTexParameteri(
-      GL_TEXTURE_2D,
-      GL_TEXTURE_MIN_FILTER, // Use trilinear filtering when minifying
-      GL_LINEAR_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                  GL_LINEAR); // Use linear filtering when magnifying
+  // Grayscale maps are expanded so that .rgb reads return the same value
+  if (mChannels == 1) {
+    const GLint swizzle[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
+    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+  }
 
-  stbi_image_free(data); // Free CPU memory (data is now on GPU)
-  Logger::get()->info("Loaded texture: {}", path);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                  GL_LINEAR_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  stbi_image_free(data);
+  Logger::get()->debug("Loaded texture {} ({}x{}, {} channels)", path, mWidth,
+                       mHeight, mChannels);
+}
+
+Texture::Texture(const glm::vec4 &color) : mWidth(1), mHeight(1), mChannels(4) {
+  const unsigned char texel[] = {
+      static_cast<unsigned char>(glm::clamp(color.r, 0.0f, 1.0f) * 255.0f),
+      static_cast<unsigned char>(glm::clamp(color.g, 0.0f, 1.0f) * 255.0f),
+      static_cast<unsigned char>(glm::clamp(color.b, 0.0f, 1.0f) * 255.0f),
+      static_cast<unsigned char>(glm::clamp(color.a, 0.0f, 1.0f) * 255.0f)};
+
+  glGenTextures(1, &mID);
+  glBindTexture(GL_TEXTURE_2D, mID);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+               texel);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
 Texture::~Texture() { clean(); }
 
 void Texture::clean() {
   if (mID != 0 && glfwGetCurrentContext()) {
-    Logger::get()->info("Deleted texture ID: {}", mID);
     glDeleteTextures(1, &mID);
     mID = 0;
   }
 }
 
 void Texture::bind(const GLuint slot) const {
-  glActiveTexture(GL_TEXTURE0 +
-                  slot); // Activate the specified texture unit (0-31)
-  glBindTexture(GL_TEXTURE_2D, mID); // Bind this texture to the active unit
+  glActiveTexture(GL_TEXTURE0 + slot);
+  glBindTexture(GL_TEXTURE_2D, mID);
 }

@@ -1,24 +1,21 @@
-# OpenGL Renderer Configuration
-# This file contains configuration settings for the renderer.
-# Lines starting with # are comments and are ignored.
-# Format: key = value
+# Renderer configuration, read at startup.
+# Format: key = value. Relative paths are resolved from the project root.
 
-# Window Settings
-window.width = 800
-window.height = 600
-
-# Renderer Settings
+window.width = 1280
+window.height = 720
 renderer.vsync = true
 
-# Resource Paths
-# These paths are relative to the executable location
-paths.shaders = ../res/shaders/
-paths.models = ../res/models/
-paths.textures = ../res/textures/
+paths.shaders = res/shaders/
+paths.models = res/models/
+paths.textures = res/textures/
+paths.skybox = res/skyboxes/arctic/
+paths.screenshots = screenshots/
 
-# Camera Settings
 camera.fov = 45.0
-camera.speed = 2.5
+camera.speed = 5.0
 camera.sensitivity = 0.1
 camera.near_plane = 0.1
-camera.far_plane = 100.0
+camera.far_plane = 150.0
+
+# Resolution of each cascade of the directional shadow map.
+shadow.map_size = 2048

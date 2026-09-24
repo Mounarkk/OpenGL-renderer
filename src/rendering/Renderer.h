@@ -1,84 +1,49 @@
 #pragma once
-#include "../core/Config.h"
 #include "../scene/Scene.h"
 #include "RenderPass.h"
+
 #include <memory>
+#include <vector>
 
 /**
- * Core rendering system that manages render commands and OpenGL state.
+ * Base class of the renderers.
  *
- * The Renderer class collects rendering commands during a frame and executes
- * them efficiently. It manages the command queue, render passes, and
- * coordinates with OpenGL to draw geometry. The renderer uses a command-based
- * approach where objects submit render commands that are batched and executed
- * together.
- *
- * Key responsibilities:
- * - Command queue management and batching
- * - OpenGL state management and optimization
- * - Render pass coordination and execution
- * - Viewport and framebuffer management
- *
- * Ownership Patterns:
- * - Owns render passes via std::unique_ptr (exclusive ownership)
- * - Command queue is owned by the renderer instance
- * - Render commands contain shared_ptr to meshes and materials (shared
- * ownership)
+ * A frame is built in two steps: submit() gathers every entity that has a
+ * Transform and a MeshRenderer into a command queue, then render() runs the
+ * passes of the concrete renderer on that queue. Keeping the two apart makes
+ * room for other pipelines (deferred, clustered) using the same scene.
  */
 class Renderer {
 public:
-  /**
-   * Constructs the renderer and initializes render passes.
-   */
-  Renderer();
-
-  /**
-   * Virtual destructor for proper inheritance cleanup.
-   */
   virtual ~Renderer() = default;
 
-  /**
-   * Static method to clear the screen and prepare for a new frame.
-   * Sets up the default framebuffer and clears color/depth buffers.
-   */
-  static void clear();
+  /// Queues every renderable entity of the scene for the next render().
+  void submit(Scene &scene);
 
-  /**
-   * Prepares the command queue by processing scene objects.
-   * Collects render commands from scene entities for later execution.
-   * @param scene The scene containing all renderable objects
-   */
-  void prepareCommandQueue(Scene &scene);
+  /// Draws the queued commands to the window, then empties the queue.
+  virtual void render(const FrameContext &frame) = 0;
 
-  /**
-   * Executes all queued render commands with the given matrices.
-   * This processes the command queue, sets up shaders, and draws all geometry.
-   * @param projMat Projection matrix for the current camera
-   * @param viewMat View matrix for the current camera
-   */
-  void flush(const glm::mat4 &projMat, const glm::mat4 &viewMat);
+  /// Recreates the size dependent targets. Ignores zero sizes (minimized).
+  virtual void resize(int width, int height) = 0;
 
-  /**
-   * Cleans up all renderer resources.
-   * Should be called before application shutdown.
-   */
-  void cleanup() const;
-
-  /**
-   * Updates the renderer for a new viewport size.
-   * Adjusts internal framebuffers and OpenGL viewport settings.
-   * @param width New viewport width in pixels
-   * @param height New viewport height in pixels
-   */
-  void resize(int width, int height) const;
+  /// Debug view coloring each shadow cascade.
+  virtual void setShowCascades(bool show) = 0;
 
 protected:
-  std::vector<RenderCommand> s_CommandQueue;
-  std::vector<std::unique_ptr<RenderPass>> mRenderPasses;
+  std::vector<RenderCommand> mCommandQueue;
 };
 
+/// Shadow maps, forward lighting, then post processing to the window.
 class ForwardRenderer final : public Renderer {
 public:
-  ForwardRenderer();
-  ~ForwardRenderer() override;
+  ForwardRenderer(int width, int height);
+
+  void render(const FrameContext &frame) override;
+  void resize(int width, int height) override;
+  void setShowCascades(bool show) override;
+
+private:
+  std::unique_ptr<ShadowMappingPass> mShadowPass;
+  std::unique_ptr<ForwardLightingPass> mLightingPass;
+  std::unique_ptr<PostProcessingPass> mPostProcessingPass;
 };

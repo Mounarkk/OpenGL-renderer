@@ -1,94 +1,56 @@
 #include "Renderer.h"
+#include "../core/Config.h"
 
-#include "LightManager.h"
-#include <memory>
+#include <algorithm>
 
-Renderer::Renderer() {
-  // Base renderer constructor - derived classes will set up their render passes
+namespace {
+constexpr int kCascadeCount = 4;
 }
 
-void Renderer::clear() {
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-}
-
-void Renderer::prepareCommandQueue(Scene &scene) {
+void Renderer::submit(Scene &scene) {
   const auto view = scene.getAll<Transform, MeshRenderer>();
-
   for (const auto entity : view) {
-    auto [transform, meshRenderer] = view.get<Transform, MeshRenderer>(entity);
-    RenderCommand renderCommand;
-    renderCommand.transform = transform;
-    renderCommand.mesh = meshRenderer.mesh;
-    renderCommand.material = meshRenderer.material;
-    s_CommandQueue.push_back(renderCommand);
+    const auto &[transform, renderer] =
+        view.get<Transform, MeshRenderer>(entity);
+    if (renderer.mesh && renderer.material)
+      mCommandQueue.push_back(
+          {transform.getWorldMatrix(), renderer.mesh, renderer.material});
   }
 }
 
-void Renderer::flush(const glm::mat4 &projMat, const glm::mat4 &viewMat) {
-  // Sort by material to minimize state changes
-  std::sort(s_CommandQueue.begin(), s_CommandQueue.end(),
+ForwardRenderer::ForwardRenderer(const int width, const int height) {
+  mShadowPass = std::make_unique<ShadowMappingPass>(Config::getShadowMapSize(),
+                                                    kCascadeCount);
+  mLightingPass = std::make_unique<ForwardLightingPass>(width, height);
+  mPostProcessingPass = std::make_unique<PostProcessingPass>();
+  mPostProcessingPass->resize(width, height);
+}
+
+void ForwardRenderer::render(const FrameContext &frame) {
+  // Grouping by material limits texture rebinds in the lighting pass
+  std::sort(mCommandQueue.begin(), mCommandQueue.end(),
             [](const RenderCommand &a, const RenderCommand &b) {
               return a.material < b.material;
             });
 
-  for (const auto &renderPass : mRenderPasses) {
-    renderPass->execute(s_CommandQueue, projMat, viewMat);
-  }
+  mShadowPass->execute(mCommandQueue, frame);
 
-  s_CommandQueue.clear();
+  mLightingPass->setShadowData(mShadowPass->getShadowData());
+  mLightingPass->execute(mCommandQueue, frame);
+
+  mPostProcessingPass->setSourceTexture(mLightingPass->getColorTexture());
+  mPostProcessingPass->execute(mCommandQueue, frame);
+
+  mCommandQueue.clear();
 }
 
-ForwardRenderer::ForwardRenderer() {
-  // Create render passes using smart pointers for automatic memory management
-  auto shadowMapping = std::make_unique<ShadowMappingPass>("../res/shaders/shadowm_shader.vert",
-                                                          "../res/shaders/shadowm_shader.frag",
-                                                          1024, 1024);
-  
-  // We need to initialize the light matrices first - create a temporary calculation
-  constexpr float nearPlane = 1.0f;
-  constexpr float farPlane = 7.5f;
-  const glm::mat4 dirLightProjection = glm::ortho(-10.f, 10.f, -10.f, 10.f, nearPlane, farPlane);
-  const glm::mat4 dirLightView = glm::lookAt(glm::vec3(-2.0f, 4.0f, -1.0f), 
-                                            glm::vec3(0.0f, 0.0f, 0.0f),
-                                            glm::vec3(0.0f, 1.0f, 0.0f));
-  const glm::mat4 dirLightViewProj = dirLightProjection * dirLightView;
-  
-  auto dirLightShadowMapID = shadowMapping->getTextDepthBufferID();
-
-  auto forward = std::make_unique<ForwardLightingPass>(
-      "../res/shaders/forward_shader.vert",
-      "../res/shaders/forward_shader.frag", 800, 600,
-      dirLightShadowMapID, dirLightViewProj);
-
-  // Get the texture ID before moving the forward pass
-  const int textColorBufferID = forward->getTextColorBufferID();
-
-  auto postProcessing = std::make_unique<PostProcessingPass>(
-      "../res/shaders/screen.vert", "../res/shaders/screen.frag",
-      textColorBufferID);
-
-  // Move the unique_ptrs into the render passes vector (cast to base class)
-  mRenderPasses.push_back(std::unique_ptr<RenderPass>(shadowMapping.release()));
-  mRenderPasses.push_back(std::unique_ptr<RenderPass>(forward.release()));
-  mRenderPasses.push_back(
-      std::unique_ptr<RenderPass>(postProcessing.release()));
+void ForwardRenderer::resize(const int width, const int height) {
+  if (width <= 0 || height <= 0)
+    return;
+  mLightingPass->resize(width, height);
+  mPostProcessingPass->resize(width, height);
 }
 
-ForwardRenderer::~ForwardRenderer() { cleanup(); }
-
-void Renderer::cleanup() const {
-  // Clean up render pass resources (smart pointers handle memory automatically)
-  for (const auto &pass : mRenderPasses) {
-    pass->cleanup();
-  }
-  // Note: std::unique_ptr automatically deletes render passes when vector is
-  // destroyed
-}
-
-void Renderer::resize(int width, int height) const {
-  // Default implementation
-  for (const auto &pass : mRenderPasses) {
-    pass->resize(width, height);
-  }
+void ForwardRenderer::setShowCascades(const bool show) {
+  mLightingPass->setShowCascades(show);
 }

@@ -2,76 +2,42 @@
 #include "../gl/IndexBuffer.h"
 #include "../gl/VertexArray.h"
 #include "../gl/VertexBuffer.h"
-#include "../gl/VertexBufferLayout.h"
-#include "../rendering/Material.h"
+
+#include <glm.hpp>
+
+#include <memory>
 #include <vector>
 
-/**
- * Vertex data structure containing all attributes needed for rendering.
- * This structure defines the layout of vertex data in memory and includes
- * all information needed for modern PBR rendering techniques.
- */
+/// Interleaved vertex format shared by every mesh (locations 0 to 4).
 struct Vertex {
-  glm::vec3 position;  // 3D position in model space
-  glm::vec3 normal;    // Surface normal vector
-  glm::vec3 tangent;   // Tangent vector for normal mapping
-  glm::vec3 bitangent; // Bitangent vector for normal mapping
-  glm::vec2 texCoords; // UV texture coordinates
+  glm::vec3 position;
+  glm::vec3 normal;
+  glm::vec3 tangent;
+  glm::vec3 bitangent;
+  glm::vec2 texCoords;
 };
 
 /**
- * Renderable mesh containing geometry data and rendering state.
+ * Indexed triangle geometry living on the GPU.
  *
- * The Mesh class represents a piece of 3D geometry that can be rendered.
- * It encapsulates vertex data, index data, and the associated OpenGL objects
- * needed for efficient rendering. Each mesh can have an associated material
- * that defines its surface properties. The class handles the complete setup
- * of vertex attributes and provides a simple draw interface.
- *
- * Key features:
- * - Efficient vertex and index buffer management
- * - Automatic vertex attribute layout setup
- * - Material association for surface properties
- * - Optimized rendering with indexed geometry
- * - Proper resource cleanup and state management
+ * A mesh only owns geometry. The material it is drawn with is chosen by the
+ * MeshRenderer component, so the same mesh can be reused with several
+ * materials.
  */
 class Mesh {
 public:
-  /**
-   * Constructs a mesh from vertex and index data with an associated material.
-   * Sets up all OpenGL objects (VAO, VBO, IBO) and configures vertex
-   * attributes.
-   * @param vertices Vector of vertex data containing positions, normals, UVs,
-   * etc.
-   * @param indices Vector of indices for indexed rendering (triangles)
-   * @param material Shared pointer to material defining surface properties
-   */
   Mesh(const std::vector<Vertex> &vertices,
-       const std::vector<unsigned int> &indices,
-       const std::shared_ptr<Material> &material);
+       const std::vector<unsigned int> &indices);
 
-  /**
-   * Destructor that automatically cleans up all OpenGL resources.
-   */
-  ~Mesh();
-
-  /**
-   * Renders this mesh using its associated material.
-   * Binds the VAO and issues the draw call with indexed rendering.
-   */
+  /// Issues the indexed draw call. The caller binds the shader beforehand.
   void draw() const;
 
-  /**
-   * Manually cleans up all OpenGL resources.
-   * Called automatically by destructor.
-   */
-  void clean();
+  [[nodiscard]] GLsizei getIndexCount() const { return mIBO->getCount(); }
 
 private:
+  // Created in the constructor body: the index buffer must be bound while
+  // this mesh's VAO is bound, otherwise it ends up in another VAO's state.
   std::unique_ptr<VertexArray> mVAO;
   std::unique_ptr<VertexBuffer> mVBO;
   std::unique_ptr<IndexBuffer> mIBO;
-  std::shared_ptr<Material> mMaterial;
-
-  bool mDestroyed;
 };

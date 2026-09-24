@@ -1,166 +1,73 @@
 #pragma once
-#include "VertexArray.h"
-#include "VertexBuffer.h"
-
 #include <glad/glad.h>
-#include <memory>
 
-/**
- * Enumeration for different framebuffer types.
- */
+/// Attachment layout of a FrameBuffer.
 enum class FrameBufferType {
-  Color,     // Standard color + depth framebuffer
-  ShadowMap  // Depth-only framebuffer for shadow mapping
+  Color,            ///< RGBA16F color texture + depth/stencil renderbuffer
+  ShadowMap,        ///< Single depth texture
+  CascadedShadowMap ///< Depth texture array, one layer per cascade
 };
 
 /**
- * OpenGL framebuffer wrapper for off-screen rendering and post-processing.
+ * Off-screen render target.
  *
- * The FrameBuffer class encapsulates an OpenGL framebuffer object (FBO) with
- * different attachment configurations based on the specified type. This enables
- * rendering to textures instead of the default framebuffer, which is essential
- * for post-processing effects, shadow mapping, and other advanced rendering
- * techniques. The class follows RAII principles with move semantics for safe
- * resource management.
+ * The attachments depend on the FrameBufferType. The color target is a half
+ * float texture so lighting can exceed 1.0 before tone mapping in the post
+ * process pass. Depth targets clamp to a white border so that anything
+ * outside the light frustum is considered lit.
  *
- * Supported types:
- * - Color: Standard framebuffer with color texture + depth renderbuffer
- * - ShadowMap: Depth-only framebuffer with depth texture for shadow mapping
- *
- * Key features:
- * - Multiple framebuffer types in one class
- * - Move-only semantics to prevent resource duplication
- * - Type-specific attachment creation
- * - Easy binding/unbinding for render target switching
- * - Proper resource cleanup and error handling
- *
- * Usage examples:
- * ```cpp
- * // Create standard color framebuffer
- * FrameBuffer colorFBO(800, 600, FrameBufferType::Color);
- *
- * // Create shadow map framebuffer
- * FrameBuffer shadowFBO(2048, 2048, FrameBufferType::ShadowMap);
- * ```
+ * Framebuffers are move-only. Resizing is done by creating a new one.
  */
 class FrameBuffer {
 public:
   /**
-   * Creates a framebuffer with the specified dimensions and type.
-   * @param width Framebuffer width in pixels
-   * @param height Framebuffer height in pixels
-   * @param type Type of framebuffer to create
+   * @param width Width in pixels
+   * @param height Height in pixels
+   * @param type Attachment layout
+   * @param layers Number of layers, only used by CascadedShadowMap
    */
-  FrameBuffer(int width, int height, FrameBufferType type = FrameBufferType::Color);
-
-  /**
-   * Destructor that automatically cleans up all framebuffer resources.
-   */
+  FrameBuffer(int width, int height,
+              FrameBufferType type = FrameBufferType::Color, int layers = 1);
   ~FrameBuffer();
 
-  /**
-   * Manually deletes the framebuffer and associated resources.
-   * Called automatically by destructor.
-   */
-  void clean();
-
-  // Move-only semantics - framebuffers should not be copied
   FrameBuffer(const FrameBuffer &) = delete;
   FrameBuffer &operator=(const FrameBuffer &) = delete;
-
-  /**
-   * Move constructor for transferring framebuffer ownership.
-   * @param other FrameBuffer to move from
-   */
   FrameBuffer(FrameBuffer &&other) noexcept;
-
-  /**
-   * Move assignment operator for transferring framebuffer ownership.
-   * @param other FrameBuffer to move from
-   * @return Reference to this object
-   */
   FrameBuffer &operator=(FrameBuffer &&other) noexcept;
 
-  /**
-   * Binds this framebuffer as the current render target.
-   * All subsequent rendering will go to this framebuffer instead of the screen.
-   */
+  /// Deletes the framebuffer and its attachments. Safe to call several times.
+  void clean();
+
+  /// Binds the framebuffer and sets the viewport to its size.
   void bind() const;
 
-  /**
-   * Unbinds any framebuffer and returns to default framebuffer (screen).
-   * Static method that can be called without a framebuffer instance.
-   */
+  /// Binds the default framebuffer (the window).
   static void unbind();
 
-  /**
-   * Unbinds a specific framebuffer by ID.
-   * @param id OpenGL framebuffer ID to unbind
-   */
-  static void unbindOther(unsigned int id);
-
-  /**
-   * Gets the framebuffer width.
-   * @return The width of this framebuffer
-   */
-  [[nodiscard]] unsigned int getWidth() const { return mWidth; }
-
-  /**
-   * Gets the framebuffer height.
-   * @return The height of this framebuffer
-   */
-  [[nodiscard]] unsigned int getHeight() const { return mHeight; }
-
-  /**
-   * Gets the framebuffer type.
-   * @return The type of this framebuffer
-   */
+  [[nodiscard]] int getWidth() const { return mWidth; }
+  [[nodiscard]] int getHeight() const { return mHeight; }
+  [[nodiscard]] int getLayers() const { return mLayers; }
   [[nodiscard]] FrameBufferType getType() const { return mType; }
 
-  /**
-   * Gets the color texture ID (only valid for Color type framebuffers).
-   * @return OpenGL texture ID of color attachment, or 0 if not applicable
-   */
-  [[nodiscard]] unsigned int getColorTexture() const { return mColorTextureID; }
+  /// Color attachment, 0 for depth-only framebuffers.
+  [[nodiscard]] GLuint getColorTexture() const { return mColorTextureID; }
 
-  /**
-   * Gets the depth texture ID (only valid for ShadowMap type framebuffers).
-   * @return OpenGL texture ID of depth attachment, or 0 if not applicable
-   */
-  [[nodiscard]] unsigned int getDepthTexture() const { return mDepthTextureID; }
-
-  /**
-   * Binds the depth texture to the specified texture unit (for ShadowMap type).
-   * @param textureUnit Texture unit to bind to
-   */
-  void bindDepthTexture(unsigned int textureUnit = 0) const;
-
-  // Legacy public members for backward compatibility
-  unsigned int mTextureID = 0;      // Alias for color texture (deprecated, use getColorTexture())
-  unsigned int mRboID = 0;          // Depth renderbuffer ID (deprecated)
+  /// Depth attachment, 0 for Color framebuffers (they use a renderbuffer).
+  [[nodiscard]] GLuint getDepthTexture() const { return mDepthTextureID; }
 
 private:
-  unsigned int mRendererID = 0;     // OpenGL framebuffer object ID
-  int mWidth, mHeight;              // Framebuffer dimensions
-  FrameBufferType mType;            // Type of framebuffer
-  
-  // Type-specific attachment IDs
-  unsigned int mColorTextureID = 0;  // Color attachment texture (Color type)
-  unsigned int mDepthTextureID = 0;  // Depth attachment texture (ShadowMap type)
-  unsigned int mDepthRboID = 0;      // Depth renderbuffer (Color type)
+  GLuint mRendererID = 0;
+  int mWidth = 0;
+  int mHeight = 0;
+  int mLayers = 1;
+  FrameBufferType mType = FrameBufferType::Color;
 
-  /**
-   * Creates attachments based on framebuffer type.
-   */
-  void createAttachments();
+  GLuint mColorTextureID = 0;
+  GLuint mDepthTextureID = 0;
+  GLuint mDepthRboID = 0;
 
-  /**
-   * Creates color framebuffer attachments (color texture + depth renderbuffer).
-   */
   void createColorAttachments();
-
-  /**
-   * Creates shadow map attachments (depth texture only).
-   */
   void createShadowMapAttachments();
+  void createCascadedShadowMapAttachments();
+  void release() noexcept;
 };

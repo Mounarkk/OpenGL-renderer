@@ -5,28 +5,28 @@ layout (location = 2) in vec3 aTangent;
 layout (location = 3) in vec3 aBitangent;
 layout (location = 4) in vec2 aTexCoords;
 
-out vec3 Normal;
-out vec3 FragPos;
-out vec4 FragPosDirLightSpace;
-out vec2 TexCoords;
-out mat3 TBN;
+out VS_OUT {
+    vec3 fragPos;
+    vec2 texCoords;
+    vec3 normal;
+    vec3 tangent;
+    vec3 bitangent;
+} vs_out;
 
 uniform mat4 uModel;
 uniform mat4 uViewProj;
-uniform mat4 uDirLightViewProj;
 
 void main()
 {
-    // note that we read the multiplication from right to left
-    gl_Position = uViewProj * uModel * vec4(aPos, 1.0);
-    TexCoords = aTexCoords;
-    FragPos = vec3(uModel * vec4(aPos, 1.0));
-    FragPosDirLightSpace = uDirLightViewProj * vec4(FragPos, 1.0);
-    Normal = mat3(transpose(inverse(uModel))) * aNormal;
+    vec4 worldPos = uModel * vec4(aPos, 1.0);
+    // Inverse transpose keeps normals perpendicular under non-uniform scaling
+    mat3 normalMatrix = transpose(inverse(mat3(uModel)));
 
-    // TBN matrix
-    vec3 T = normalize(vec3(uModel * vec4(aTangent, 0)));
-    vec3 B = normalize(vec3(uModel * vec4(aBitangent, 0)));
-    vec3 N = normalize(vec3(uModel * vec4(aNormal, 0)));
-    TBN = mat3(T, B, N);
+    vs_out.fragPos = worldPos.xyz;
+    vs_out.texCoords = aTexCoords;
+    vs_out.normal = normalMatrix * aNormal;
+    vs_out.tangent = mat3(uModel) * aTangent;
+    vs_out.bitangent = mat3(uModel) * aBitangent;
+
+    gl_Position = uViewProj * worldPos;
 }

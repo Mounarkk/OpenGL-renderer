@@ -3,62 +3,32 @@
 #include <exception>
 #include <string>
 
-/**
- * Exception class for graphics and rendering-related errors.
- *
- * This exception is thrown when critical rendering operations fail,
- * such as OpenGL initialization, shader compilation, or resource loading.
- * It provides clear error messages to help with debugging.
- */
+/// Fatal error of the renderer (context creation, GPU resources...).
 class RendererException : public std::exception {
 public:
-  /**
-   * Constructs a RendererException with a descriptive error message.
-   * @param message Detailed description of what went wrong
-   */
   explicit RendererException(const std::string &message)
-      : m_Message("Renderer Error: " + message) {}
+      : m_Message("Renderer error: " + message) {}
 
-  /**
-   * Returns the error message describing what went wrong.
-   * @return C-style string containing the error message
-   */
   const char *what() const noexcept override { return m_Message.c_str(); }
 
 private:
   std::string m_Message;
 };
 
-/**
- * Exception class specifically for shader-related errors.
- *
- * Thrown when shader compilation, linking, or loading fails.
- * Provides additional context about which shader stage failed.
- */
+/// Shader file that cannot be read, compiled or linked.
 class ShaderException : public RendererException {
 public:
-  /**
-   * Constructs a ShaderException with shader-specific error information.
-   * @param shaderType Type of shader that failed (e.g., "vertex", "fragment")
-   * @param message Detailed error message from OpenGL or file system
-   */
-  ShaderException(const std::string &shaderType, const std::string &message)
-      : RendererException("Shader (" + shaderType + ") - " + message) {}
+  /// @param shader Path or stage of the failing shader
+  /// @param message Driver log or reason of the failure
+  ShaderException(const std::string &shader, const std::string &message)
+      : RendererException("shader " + shader + ": " + message) {}
 };
 
-/**
- * Exception class for resource loading errors.
- *
- * Thrown when models, textures, or other assets fail to load.
- * Helps identify which resource caused the problem.
- */
+/// Asset (model, texture) that cannot be loaded.
 class ResourceException : public RendererException {
 public:
-  /**
-   * Constructs a ResourceException with resource-specific error information.
-   * @param resourcePath Path to the resource that failed to load
-   * @param message Detailed error message explaining the failure
-   */
+  /// @param resourcePath Path of the asset
+  /// @param message Reason of the failure
   ResourceException(const std::string &resourcePath, const std::string &message)
-      : RendererException("Resource (" + resourcePath + ") - " + message) {}
+      : RendererException("resource " + resourcePath + ": " + message) {}
 };
