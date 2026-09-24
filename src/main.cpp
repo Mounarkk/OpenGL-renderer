@@ -14,6 +14,8 @@ void printUsage(const char *program) {
             << "  --scale <factor>      uniform scale applied to --model\n"
             << "  --flip-uvs            for --model files with top-left UVs\n"
             << "  --camera x,y,z,yaw,pitch  initial camera, angles in degrees\n"
+            << "  --sun azimuth,elevation   initial sun angles in degrees\n"
+            << "  --sun-only            disable the point and spot lights\n"
             << "  --cascades            start with the cascade debug view\n"
             << "  --screenshot <file>   render a few frames, save a PNG and "
                "quit\n";
@@ -43,6 +45,15 @@ int main(int argc, char **argv) {
       options.cameraPitch = pitch;
     } else if (std::strcmp(argv[i], "--flip-uvs") == 0) {
       options.modelImport.flipUVs = true;
+    } else if (std::strcmp(argv[i], "--sun") == 0 && hasValue) {
+      if (std::sscanf(argv[++i], "%f,%f", &options.sunAzimuth,
+                      &options.sunElevation) != 2) {
+        printUsage(argv[0]);
+        return 1;
+      }
+      options.hasSunOverride = true;
+    } else if (std::strcmp(argv[i], "--sun-only") == 0) {
+      options.sunOnly = true;
     } else if (std::strcmp(argv[i], "--cascades") == 0) {
       options.showCascades = true;
     } else {

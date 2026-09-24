@@ -46,7 +46,9 @@ into `res/models/backpack/`. Sponza and other test scenes come from
 |---|---|
 | `WASD`, `Space`, `Ctrl` | Move, `Shift` to go faster |
 | Mouse, scroll | Look around, zoom |
-| `Left` / `Right` | Rotate the sun |
+| `Left` / `Right` | Turn the sun around |
+| `Up` / `Down` | Raise / lower the sun |
+| `L` | Toggle the point and spot lights, leaving only the sun |
 | `C` | Toggle the cascade debug view |
 | `F12` | Save a screenshot to `screenshots/` |
 

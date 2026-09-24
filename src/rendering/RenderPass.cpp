@@ -223,7 +223,9 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
     mesh->draw();
   }
 
-  mSkybox->render(frame.projection, frame.view);
+  mSkybox->render(
+      frame.projection, frame.view,
+      LightManager::getInstance().getLights().directionalLight.direction);
 
   FrameBuffer::unbind();
 }

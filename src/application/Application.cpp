@@ -15,6 +15,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
@@ -96,6 +97,10 @@ void Application::Initialize() {
   // The framebuffer can differ from the window size on high DPI screens
   glfwGetFramebufferSize(m_Window, &m_Width, &m_Height);
   m_Renderer = std::make_unique<ForwardRenderer>(m_Width, m_Height);
+  if (m_Options.hasSunOverride)
+    LightManager::getInstance().setSun(m_Options.sunAzimuth,
+                                       m_Options.sunElevation);
+  LightManager::getInstance().setLocalLightsEnabled(!m_Options.sunOnly);
   m_ShowCascades = m_Options.showCascades;
   m_Renderer->setShowCascades(m_ShowCascades);
 
@@ -121,6 +126,7 @@ void Application::Run() {
     m_LastFrame = currentFrame;
 
     ProcessInput();
+    UpdateWindowTitle();
     m_Scene.onUpdate(m_DeltaTime);
 
     // Nothing to draw into while the window is minimized
@@ -152,6 +158,29 @@ void Application::ProcessInput() {
     lights.rotateSun(kSunRotationSpeed * m_DeltaTime);
   if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
     lights.rotateSun(-kSunRotationSpeed * m_DeltaTime);
+  if (glfwGetKey(m_Window, GLFW_KEY_UP) == GLFW_PRESS)
+    lights.tiltSun(kSunRotationSpeed * m_DeltaTime);
+  if (glfwGetKey(m_Window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    lights.tiltSun(-kSunRotationSpeed * m_DeltaTime);
+}
+
+void Application::UpdateWindowTitle() {
+  // Refreshed a few times per second, setting the title every frame is slow
+  // on some window managers
+  m_TitleTimer += m_DeltaTime;
+  ++m_TitleFrames;
+  if (m_TitleTimer < 0.25f)
+    return;
+
+  const auto &lights = LightManager::getInstance();
+  char title[256];
+  std::snprintf(title, sizeof(title),
+                "%s | %.0f fps | sun azimuth %.0f, elevation %.0f",
+                m_Title.c_str(), m_TitleFrames / m_TitleTimer,
+                lights.getSunAzimuth(), lights.getSunElevation());
+  glfwSetWindowTitle(m_Window, title);
+  m_TitleTimer = 0.0f;
+  m_TitleFrames = 0;
 }
 
 FrameContext Application::BuildFrameContext() const {
@@ -226,6 +255,11 @@ void Application::KeyCallback(GLFWwindow *window, const int key,
     app->m_ShowCascades = !app->m_ShowCascades;
     app->m_Renderer->setShowCascades(app->m_ShowCascades);
     break;
+  case GLFW_KEY_L: {
+    auto &lights = LightManager::getInstance();
+    lights.setLocalLightsEnabled(!lights.areLocalLightsEnabled());
+    break;
+  }
   case GLFW_KEY_F12:
     app->m_ScreenshotRequested = true;
     break;

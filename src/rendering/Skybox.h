@@ -11,7 +11,8 @@
  *
  * Expects right, left, top, bottom, front and back .jpg faces in the given
  * directory. It is drawn last with GL_LEQUAL so it only fills pixels that no
- * geometry wrote to.
+ * geometry wrote to. The sun is drawn on top of the cube map where the
+ * directional light comes from, which makes the shadows easy to check.
  */
 class Skybox {
 public:
@@ -21,7 +22,12 @@ public:
   Skybox(const Skybox &) = delete;
   Skybox &operator=(const Skybox &) = delete;
 
-  void render(const glm::mat4 &projMat, const glm::mat4 &viewMat) const;
+  /**
+   * @param sunDirection Direction the sunlight travels in (towards the
+   * ground). A sun disc is drawn in the opposite direction.
+   */
+  void render(const glm::mat4 &projMat, const glm::mat4 &viewMat,
+              const glm::vec3 &sunDirection) const;
 
 private:
   GLuint mCubeMapTexID = 0;

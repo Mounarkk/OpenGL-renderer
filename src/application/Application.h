@@ -27,6 +27,14 @@ struct ApplicationOptions {
   float cameraYaw = -90.0f;
   float cameraPitch = 0.0f;
 
+  /// Initial sun angles in degrees, the default light is kept when unset.
+  bool hasSunOverride = false;
+  float sunAzimuth = 0.0f;
+  float sunElevation = 45.0f;
+
+  /// Starts with the point and spot lights disabled.
+  bool sunOnly = false;
+
   /// Starts with the cascade debug view enabled.
   bool showCascades = false;
 };
@@ -37,7 +45,9 @@ struct ApplicationOptions {
  * Controls:
  *   WASD / Space / Ctrl   move, Shift to go faster
  *   Mouse / Scroll        look around / zoom
- *   Left / Right arrows   rotate the sun
+ *   Left / Right arrows   turn the sun around
+ *   Up / Down arrows      raise / lower the sun
+ *   L                     toggle the point and spot lights
  *   C                     toggle the shadow cascade debug view
  *   F12                   save a screenshot
  *   Escape                quit
@@ -55,6 +65,7 @@ public:
 private:
   void Initialize();
   void ProcessInput();
+  void UpdateWindowTitle();
   void Render();
   void Cleanup();
 
@@ -91,4 +102,7 @@ private:
   float m_LastFrame = 0.0f;
   bool m_ShowCascades = false;
   bool m_ScreenshotRequested = false;
+
+  float m_TitleTimer = 0.0f;
+  int m_TitleFrames = 0;
 };

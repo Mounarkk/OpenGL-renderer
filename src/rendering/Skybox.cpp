@@ -79,7 +79,8 @@ Skybox::~Skybox() {
     glDeleteTextures(1, &mCubeMapTexID);
 }
 
-void Skybox::render(const glm::mat4 &projMat, const glm::mat4 &viewMat) const {
+void Skybox::render(const glm::mat4 &projMat, const glm::mat4 &viewMat,
+                    const glm::vec3 &sunDirection) const {
   glDepthFunc(GL_LEQUAL);
 
   mShader->use();
@@ -87,6 +88,7 @@ void Skybox::render(const glm::mat4 &projMat, const glm::mat4 &viewMat) const {
   mShader->setMat4("projection", projMat);
   mShader->setMat4("view", glm::mat4(glm::mat3(viewMat)));
   mShader->setInt("skybox", 0);
+  mShader->setVec3("uSunDirection", -glm::normalize(sunDirection));
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_CUBE_MAP, mCubeMapTexID);

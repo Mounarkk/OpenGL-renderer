@@ -70,6 +70,20 @@ In the lighting shader:
 
 Press `C` to tint each cascade with a different color.
 
+## Checking the shadows
+
+The sun is drawn in the sky at the exact direction of the light, and its
+angles are shown in the window title. Shadows must point away from the disc.
+
+- `L` turns off the point and spot lights, so only the sun lights the scene.
+- The arrow keys move the sun: `Left`/`Right` for azimuth, `Up`/`Down` for
+  elevation. Moving it low makes long shadows that are easy to follow.
+- The same setup from the command line, with the sun in front of the camera:
+
+```bash
+./build/opengl_renderer --sun 270,12 --sun-only --camera 1.5,1.6,9,-94,4
+```
+
 ## Known limitations
 
 - No blending between cascades, the resolution change can be visible on

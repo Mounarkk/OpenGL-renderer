@@ -62,8 +62,27 @@ public:
   [[nodiscard]] const LightData &getLights() const { return mLights; }
   [[nodiscard]] LightData &getLights() { return mLights; }
 
-  /// Rotates the directional light around the world Y axis.
+  /// Turns the sun around the vertical axis.
   void rotateSun(float angleRadians);
+
+  /// Places the sun, angles in degrees (see getSunAzimuth/getSunElevation).
+  void setSun(float azimuthDegrees, float elevationDegrees);
+
+  /// Raises or lowers the sun, kept between the horizon and the zenith.
+  void tiltSun(float angleRadians);
+
+  /// Compass angle of the sun in degrees, 0 towards +X, 90 towards +Z.
+  [[nodiscard]] float getSunAzimuth() const;
+
+  /// Height of the sun above the horizon in degrees.
+  [[nodiscard]] float getSunElevation() const;
+
+  /// Enables the point and spot lights. With them off, only the sun lights
+  /// the scene, which makes its shadows easier to read.
+  void setLocalLightsEnabled(bool enabled) { mLocalLightsEnabled = enabled; }
+  [[nodiscard]] bool areLocalLightsEnabled() const {
+    return mLocalLightsEnabled;
+  }
 
   /// Uploads every light to the `uDirLight`, `uPointLights` and `uSpotLight`
   /// uniforms.
@@ -75,5 +94,11 @@ public:
 private:
   LightManager();
 
+  /// Rebuilds the directional light direction from the two angles.
+  void updateSunDirection();
+
   LightData mLights;
+  float mSunAzimuth = 0.0f;   ///< Radians
+  float mSunElevation = 0.0f; ///< Radians
+  bool mLocalLightsEnabled = true;
 };
