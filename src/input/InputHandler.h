@@ -19,6 +19,10 @@ public:
 
   void handleMouseScroll(double yOffset, Camera &camera);
 
+  /// Forgets the last cursor position, to call when the camera takes the
+  /// mouse back so that it does not jump.
+  void resetMouse() { m_FirstMouse = true; }
+
 private:
   float m_LastX = 0.0f;
   float m_LastY = 0.0f;

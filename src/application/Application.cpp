@@ -7,6 +7,7 @@
 #include "../rendering/LightManager.h"
 #include "../rendering/Material.h"
 #include "../rendering/Mesh.h"
+#include "../rendering/Primitives.h"
 #include "../resource/ResourceManager.h"
 #include "../scene/Components.h"
 
@@ -84,7 +85,6 @@ void Application::Initialize() {
   glfwSetCursorPosCallback(m_Window, MouseCallback);
   glfwSetScrollCallback(m_Window, ScrollCallback);
   glfwSetKeyCallback(m_Window, KeyCallback);
-  glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
   if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress)))
     throw RendererException("Failed to load OpenGL functions");
@@ -101,8 +101,11 @@ void Application::Initialize() {
     LightManager::getInstance().setSun(m_Options.sunAzimuth,
                                        m_Options.sunElevation);
   LightManager::getInstance().setLocalLightsEnabled(!m_Options.sunOnly);
-  m_ShowCascades = m_Options.showCascades;
-  m_Renderer->setShowCascades(m_ShowCascades);
+  m_Renderer->getSettings().showCascades = m_Options.showCascades;
+
+  // After our callbacks are installed: the ImGui backend chains to them
+  m_DebugUI = std::make_unique<DebugUI>(m_Window);
+  SetCameraMode(true);
 
   if (m_Options.modelPath.empty())
     SetupShadowTestScene();
@@ -129,9 +132,15 @@ void Application::Run() {
     UpdateWindowTitle();
     m_Scene.onUpdate(m_DeltaTime);
 
+    m_DebugUI->build({m_Renderer->getSettings(), m_Camera, m_DeltaTime,
+                      m_Renderer->getLastDrawCount(), m_CameraMode,
+                      m_ScreenshotRequested});
+
     // Nothing to draw into while the window is minimized
     if (m_Width > 0 && m_Height > 0) {
       Render();
+
+      // Screenshots are taken before the panel is drawn over the frame
 
       if (m_ScreenshotRequested) {
         SaveScreenshot(Config::getScreenshotPath() +
@@ -144,6 +153,7 @@ void Application::Run() {
         glfwSetWindowShouldClose(m_Window, true);
       }
     }
+    m_DebugUI->render();
 
     glfwSwapBuffers(m_Window);
     glfwPollEvents();
@@ -151,6 +161,10 @@ void Application::Run() {
 }
 
 void Application::ProcessInput() {
+  // Keys typed into a text field of the panel must not move the camera
+  if (m_DebugUI->wantsKeyboard())
+    return;
+
   m_InputHandler.processInput(m_Window, m_Camera, m_DeltaTime);
 
   auto &lights = LightManager::getInstance();
@@ -234,13 +248,15 @@ void Application::FrameBufferSizeCallback(GLFWwindow *window, const int width,
 void Application::MouseCallback(GLFWwindow *window, const double xPos,
                                 const double yPos) {
   auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
-  app->m_InputHandler.handleMouseMovement(xPos, yPos, app->m_Camera);
+  if (app->m_CameraMode)
+    app->m_InputHandler.handleMouseMovement(xPos, yPos, app->m_Camera);
 }
 
 void Application::ScrollCallback(GLFWwindow *window, double /*xOffset*/,
                                  const double yOffset) {
   auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
-  app->m_InputHandler.handleMouseScroll(yOffset, app->m_Camera);
+  if (app->m_CameraMode)
+    app->m_InputHandler.handleMouseScroll(yOffset, app->m_Camera);
 }
 
 void Application::KeyCallback(GLFWwindow *window, const int key,
@@ -250,10 +266,19 @@ void Application::KeyCallback(GLFWwindow *window, const int key,
     return;
 
   auto *app = static_cast<Application *>(glfwGetWindowUserPointer(window));
+  if (app->m_DebugUI && app->m_DebugUI->wantsKeyboard())
+    return;
+
+  auto &settings = app->m_Renderer->getSettings();
   switch (key) {
+  case GLFW_KEY_TAB:
+    app->SetCameraMode(!app->m_CameraMode);
+    break;
+  case GLFW_KEY_F1:
+    app->m_DebugUI->toggleVisible();
+    break;
   case GLFW_KEY_C:
-    app->m_ShowCascades = !app->m_ShowCascades;
-    app->m_Renderer->setShowCascades(app->m_ShowCascades);
+    settings.showCascades = !settings.showCascades;
     break;
   case GLFW_KEY_L: {
     auto &lights = LightManager::getInstance();
@@ -319,32 +344,32 @@ void Application::SetupModelScene(const std::string &path, const float scale,
 }
 
 void Application::CreateGroundPlane(const float halfSize) {
-  constexpr float y = -1.0f;
-  const float uvScale = halfSize / 2.0f;
-  const glm::vec3 up(0.0f, 1.0f, 0.0f);
-  const glm::vec3 tangent(1.0f, 0.0f, 0.0f);
-  const glm::vec3 bitangent(0.0f, 0.0f, -1.0f);
-
-  const std::vector<Vertex> vertices = {
-      {{-halfSize, y, halfSize}, up, tangent, bitangent, {0.0f, 0.0f}},
-      {{halfSize, y, halfSize}, up, tangent, bitangent, {uvScale, 0.0f}},
-      {{halfSize, y, -halfSize}, up, tangent, bitangent, {uvScale, uvScale}},
-      {{-halfSize, y, -halfSize}, up, tangent, bitangent, {0.0f, uvScale}}};
-  const std::vector<unsigned int> indices = {0, 1, 2, 2, 3, 0};
-
   auto material = std::make_shared<Material>();
   material->setAlbedo(glm::vec3(0.25f));
   material->setSpecular(glm::vec3(0.05f));
 
+  Transform transform;
+  transform.position.y = -1.0f;
+
   Entity ground = m_Scene.createEntity("Ground");
-  ground.addComponent<Transform>();
-  ground.addComponent<MeshRenderer>(std::make_shared<Mesh>(vertices, indices),
-                                    material);
+  ground.addComponent<Transform>(transform);
+  ground.addComponent<MeshRenderer>(
+      Primitives::createPlane(halfSize, halfSize / 2.0f), material);
+}
+
+void Application::SetCameraMode(const bool enabled) {
+  m_CameraMode = enabled;
+  glfwSetInputMode(m_Window, GLFW_CURSOR,
+                   enabled ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+  m_DebugUI->setMouseEnabled(!enabled);
+  if (enabled)
+    m_InputHandler.resetMouse();
 }
 
 void Application::Cleanup() {
   // GPU objects must be released while the context is still alive: the
   // renderer first, then everything the scene and the caches keep alive.
+  m_DebugUI.reset();
   m_Renderer.reset();
   m_Scene.clear();
   ResourceManager::clearCache();

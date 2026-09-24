@@ -14,6 +14,8 @@ to implement rendering techniques from scratch.
 - sRGB-correct pipeline: HDR color target, gamma correction in post-process
 - Model loading through Assimp (OBJ, glTF, FBX...), textures cached and shared
 - Entity-component scene built on EnTT, cube map skybox
+- Dear ImGui panel to tweak lights and shadow settings live, point lights
+  shown as colored spheres
 
 | Cascade debug view (`C`) | Crytek Sponza |
 |---|---|
@@ -24,7 +26,7 @@ How the shadows work is described in [docs/cascaded-shadow-maps.md](docs/cascade
 ## Building
 
 Every dependency is vendored in `vendor/` (GLFW, glad, GLM, Assimp, EnTT,
-spdlog, stb). You only need CMake 3.10+ and a C++17 compiler.
+spdlog, stb, Dear ImGui). You only need CMake 3.10+ and a C++17 compiler.
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -50,6 +52,8 @@ into `res/models/backpack/`. Sponza and other test scenes come from
 | `Up` / `Down` | Raise / lower the sun |
 | `L` | Toggle the point and spot lights, leaving only the sun |
 | `C` | Toggle the cascade debug view |
+| `Tab` | Free the mouse to use the debug panel, and back |
+| `F1` | Hide the debug panel |
 | `F12` | Save a screenshot to `screenshots/` |
 
 Any model can be opened directly:
@@ -72,6 +76,7 @@ src/
   rendering/    render passes, materials, lights
   resource/     Assimp import, texture/shader/model caches
   scene/        EnTT scene, components, camera
+  ui/           Dear ImGui debug panel
 res/shaders/    GLSL sources
 ```
 

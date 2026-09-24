@@ -26,11 +26,16 @@ public:
   /// Recreates the size dependent targets. Ignores zero sizes (minimized).
   virtual void resize(int width, int height) = 0;
 
-  /// Debug view coloring each shadow cascade.
-  virtual void setShowCascades(bool show) = 0;
+  /// Options applied to every following frame.
+  RendererSettings &getSettings() { return mSettings; }
+
+  /// Number of meshes drawn by the last render().
+  [[nodiscard]] size_t getLastDrawCount() const { return mLastDrawCount; }
 
 protected:
   std::vector<RenderCommand> mCommandQueue;
+  RendererSettings mSettings;
+  size_t mLastDrawCount = 0;
 };
 
 /// Shadow maps, forward lighting, then post processing to the window.
@@ -40,7 +45,6 @@ public:
 
   void render(const FrameContext &frame) override;
   void resize(int width, int height) override;
-  void setShowCascades(bool show) override;
 
 private:
   std::unique_ptr<ShadowMappingPass> mShadowPass;

@@ -3,6 +3,7 @@
 #include "../core/Logger.h"
 #include "../resource/ResourceManager.h"
 #include "LightManager.h"
+#include "Primitives.h"
 
 #include <gtc/matrix_transform.hpp>
 
@@ -12,9 +13,6 @@
 #include <string>
 
 namespace {
-/// Blend between logarithmic (1.0) and uniform (0.0) cascade splits.
-constexpr float kSplitLambda = 0.8f;
-
 /// How far behind a cascade, towards the light, occluders are still captured,
 /// as a multiple of the cascade radius.
 constexpr float kCasterDistanceFactor = 4.0f;
@@ -68,6 +66,7 @@ void ShadowMappingPass::updateCascades(const FrameContext &frame) {
 
   // "Practical split scheme": logarithmic splits give each cascade the same
   // perspective aliasing, uniform splits avoid tiny first cascades. Blend both.
+  const float lambda = frame.settings.cascadeSplitLambda;
   const float n = frame.nearPlane;
   const float f = frame.farPlane;
   float sliceNear = n;
@@ -75,8 +74,7 @@ void ShadowMappingPass::updateCascades(const FrameContext &frame) {
     const float p = static_cast<float>(i) / static_cast<float>(mCascadeCount);
     const float logSplit = n * std::pow(f / n, p);
     const float uniformSplit = n + (f - n) * p;
-    const float sliceFar =
-        kSplitLambda * logSplit + (1.0f - kSplitLambda) * uniformSplit;
+    const float sliceFar = lambda * logSplit + (1.0f - lambda) * uniformSplit;
 
     float texelSize = 0.0f;
     float texelDepth = 0.0f;
@@ -139,6 +137,10 @@ glm::mat4 ShadowMappingPass::computeCascadeMatrix(const FrameContext &frame,
 
 void ShadowMappingPass::execute(const std::vector<RenderCommand> &commands,
                                 const FrameContext &frame) {
+  mShadowData.cascadeCount = frame.settings.shadowsEnabled ? mCascadeCount : 0;
+  if (!frame.settings.shadowsEnabled)
+    return;
+
   updateCascades(frame);
 
   mFBO->bind();
@@ -176,6 +178,44 @@ ForwardLightingPass::ForwardLightingPass(const int width, const int height) {
                                         dir + "forward_shader.frag");
   mFBO = std::make_unique<FrameBuffer>(width, height);
   mSkybox = std::make_unique<Skybox>(Config::getSkyboxPath());
+
+  mGizmoShader = ResourceManager::loadShader(dir + "light_gizmo.vert",
+                                             dir + "light_gizmo.frag");
+  mGizmoSphere = Primitives::createSphere(1.0f, 16, 12);
+}
+
+void ForwardLightingPass::drawLightGizmos(const FrameContext &frame) const {
+  const auto &lightManager = LightManager::getInstance();
+  if (!lightManager.areLocalLightsEnabled())
+    return;
+
+  // Markers show the hue of the light at full brightness, whatever its
+  // intensity, so that dim lights stay visible.
+  const auto markerColor = [](const glm::vec3 &color) {
+    const float peak = std::max({color.r, color.g, color.b});
+    return peak > 0.0f ? color / peak : glm::vec3(0.0f);
+  };
+  const auto drawMarker = [&](const glm::vec3 &position, const float radius,
+                              const glm::vec3 &color) {
+    glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+    model = glm::scale(model, glm::vec3(radius));
+    mGizmoShader->setMat4("uModel", model);
+    mGizmoShader->setVec3("uColor", markerColor(color));
+    mGizmoSphere->draw();
+  };
+
+  mGizmoShader->use();
+  mGizmoShader->setMat4("uViewProj", frame.projection * frame.view);
+
+  const auto &lights = lightManager.getLights();
+  for (const auto &light : lights.pointLights)
+    drawMarker(light.position, 0.12f, light.diffuse);
+
+  // The spot light gets a second, smaller sphere along its direction
+  const auto &spot = lights.spotLight;
+  drawMarker(spot.position, 0.12f, spot.diffuse);
+  drawMarker(spot.position + glm::normalize(spot.direction) * 0.25f, 0.06f,
+             spot.diffuse);
 }
 
 void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
@@ -189,7 +229,11 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
   mShader->setMat4("uViewProj", frame.projection * frame.view);
   mShader->setMat4("uView", frame.view);
   mShader->setVec3("uViewPos", frame.cameraPosition);
-  mShader->setBool("uShowCascades", mShowCascades);
+  mShader->setBool("uShowCascades", frame.settings.showCascades);
+  mShader->setFloat("uShadowBiasConstant", frame.settings.shadowBiasConstant);
+  mShader->setFloat("uShadowBiasSlope", frame.settings.shadowBiasSlope);
+  mShader->setFloat("uShadowNormalOffset", frame.settings.shadowNormalOffset);
+  mShader->setBool("uShadowPcf", frame.settings.shadowPcf);
 
   // Texture unit 0 is reserved for the shadow map, see Material
   const bool hasShadows = mShadowData && mShadowData->cascadeCount > 0;
@@ -222,6 +266,9 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
     mShader->setMat4("uModel", model);
     mesh->draw();
   }
+
+  if (frame.settings.showLightGizmos)
+    drawLightGizmos(frame);
 
   mSkybox->render(
       frame.projection, frame.view,

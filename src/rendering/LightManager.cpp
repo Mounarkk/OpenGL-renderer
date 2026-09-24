@@ -11,13 +11,27 @@ LightManager &LightManager::getInstance() {
 }
 
 LightManager::LightManager() {
-  constexpr glm::vec3 positions[kPointLightCount] = {{0.7f, 0.2f, 2.0f},
-                                                     {2.3f, -3.3f, -4.0f},
-                                                     {-4.0f, 2.0f, -12.0f},
-                                                     {0.0f, 0.0f, -3.0f}};
+  // Spread over the test scene, slightly tinted to tell them apart
+  constexpr glm::vec3 positions[kPointLightCount] = {{1.5f, 0.3f, 1.5f},
+                                                     {-2.5f, 0.5f, -3.0f},
+                                                     {2.5f, 1.0f, -9.0f},
+                                                     {-1.5f, 1.5f, -20.0f}};
+  constexpr glm::vec3 colors[kPointLightCount] = {{1.0f, 0.75f, 0.5f},
+                                                  {0.5f, 0.7f, 1.0f},
+                                                  {0.6f, 1.0f, 0.6f},
+                                                  {1.0f, 1.0f, 1.0f}};
 
-  for (int i = 0; i < kPointLightCount; ++i)
-    mLights.pointLights[i].position = positions[i];
+  for (int i = 0; i < kPointLightCount; ++i) {
+    auto &light = mLights.pointLights[i];
+    light.position = positions[i];
+    light.diffuse = colors[i] * 0.6f;
+    light.specular = colors[i];
+    light.ambient = colors[i] * 0.02f;
+  }
+
+  auto &spot = mLights.spotLight;
+  spot.position = {0.0f, 3.0f, 5.0f};
+  spot.direction = glm::normalize(glm::vec3(0.0f, -0.6f, -1.0f));
 
   // Angles of the default direction, as seen from the ground
   const glm::vec3 toSun = -mLights.directionalLight.direction;

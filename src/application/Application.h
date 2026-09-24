@@ -4,6 +4,7 @@
 #include "../resource/Model.h"
 #include "../scene/Camera.h"
 #include "../scene/Scene.h"
+#include "../ui/DebugUI.h"
 
 #include <GLFW/glfw3.h>
 
@@ -47,6 +48,8 @@ struct ApplicationOptions {
  *   Mouse / Scroll        look around / zoom
  *   Left / Right arrows   turn the sun around
  *   Up / Down arrows      raise / lower the sun
+ *   Tab                   switch the mouse between the camera and the UI
+ *   F1                    hide the debug panel
  *   L                     toggle the point and spot lights
  *   C                     toggle the shadow cascade debug view
  *   F12                   save a screenshot
@@ -79,6 +82,10 @@ private:
                        const ModelImportOptions &import);
   void CreateGroundPlane(float halfSize);
 
+  /// Camera mode: hidden cursor driving the camera. Otherwise the cursor is
+  /// free and interacts with the debug panel.
+  void SetCameraMode(bool enabled);
+
   static void FrameBufferSizeCallback(GLFWwindow *window, int width,
                                       int height);
   static void MouseCallback(GLFWwindow *window, double xPos, double yPos);
@@ -97,10 +104,11 @@ private:
   InputHandler m_InputHandler;
   Scene m_Scene;
   std::unique_ptr<Renderer> m_Renderer;
+  std::unique_ptr<DebugUI> m_DebugUI;
 
   float m_DeltaTime = 0.0f;
   float m_LastFrame = 0.0f;
-  bool m_ShowCascades = false;
+  bool m_CameraMode = true;
   bool m_ScreenshotRequested = false;
 
   float m_TitleTimer = 0.0f;

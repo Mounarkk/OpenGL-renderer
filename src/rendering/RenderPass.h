@@ -3,6 +3,7 @@
 #include "../gl/Shader.h"
 #include "Material.h"
 #include "Mesh.h"
+#include "RendererSettings.h"
 #include "Skybox.h"
 
 #include <glm.hpp>
@@ -26,6 +27,7 @@ struct FrameContext {
   float aspectRatio = 1.0f;
   float nearPlane = 0.1f;
   float farPlane = 100.0f;
+  RendererSettings settings;
 };
 
 /// Hard limit, must match MAX_CASCADES in the shaders.
@@ -97,7 +99,8 @@ private:
 
 /**
  * Forward Blinn-Phong lighting into an HDR color target, followed by the
- * skybox. Shadows come from the ShadowData set before execute().
+ * light markers and the skybox. Shadows come from the ShadowData set before
+ * execute().
  */
 class ForwardLightingPass final : public RenderPass {
 public:
@@ -109,9 +112,6 @@ public:
 
   void setShadowData(const ShadowData &data) { mShadowData = &data; }
 
-  /// Tints each cascade with a different color, for debugging.
-  void setShowCascades(const bool show) { mShowCascades = show; }
-
   [[nodiscard]] GLuint getColorTexture() const {
     return mFBO->getColorTexture();
   }
@@ -121,7 +121,12 @@ private:
   std::unique_ptr<FrameBuffer> mFBO;
   std::unique_ptr<Skybox> mSkybox;
   const ShadowData *mShadowData = nullptr;
-  bool mShowCascades = false;
+
+  // Light markers
+  std::shared_ptr<Shader> mGizmoShader;
+  std::shared_ptr<Mesh> mGizmoSphere;
+
+  void drawLightGizmos(const FrameContext &frame) const;
 };
 
 /// Draws a texture on a fullscreen quad of the default framebuffer, applying

@@ -75,9 +75,15 @@ uniform bool uShowCascades;
 // Depth bias in texels: a constant part for precision, plus a part growing
 // with the slope of the surface seen from the light, where one texel covers
 // a larger depth range.
-const float SHADOW_BIAS_CONSTANT = 1.0;
-const float SHADOW_BIAS_SLOPE = 2.0;
+uniform float uShadowBiasConstant;
+uniform float uShadowBiasSlope;
 const float SHADOW_BIAS_MAX_SLOPE = 10.0;
+
+// Scale of the normal offset, 1.0 is about one texel of the cascade.
+uniform float uShadowNormalOffset;
+
+// 3x3 percentage closer filtering, a single tap otherwise.
+uniform bool uShadowPcf;
 
 vec3 blinnPhong(Surface s, vec3 lightDir, vec3 viewDir, vec3 diffuseColor, vec3 specularColor)
 {
@@ -134,7 +140,7 @@ float calcShadow(vec3 worldPos, vec3 normal, int layer)
     // texel of this cascade, more at grazing angles where acne is worst.
     vec3 lightDir = normalize(-uDirLight.direction);
     float cosTheta = clamp(dot(normal, lightDir), 0.0, 1.0);
-    float offset = uCascadeTexelSizes[layer] * (0.5 + 1.5 * (1.0 - cosTheta));
+    float offset = uShadowNormalOffset * uCascadeTexelSizes[layer] * (0.5 + 1.5 * (1.0 - cosTheta));
     vec4 lightSpacePos = uLightSpaceMatrices[layer] * vec4(worldPos + normal * offset, 1.0);
 
     vec3 coords = lightSpacePos.xyz / lightSpacePos.w * 0.5 + 0.5;
@@ -143,9 +149,14 @@ float calcShadow(vec3 worldPos, vec3 normal, int layer)
 
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     float slope = min(sinTheta / max(cosTheta, 1e-4), SHADOW_BIAS_MAX_SLOPE);
-    float bias = uCascadeTexelDepths[layer] * (SHADOW_BIAS_CONSTANT + SHADOW_BIAS_SLOPE * slope);
+    float bias = uCascadeTexelDepths[layer] * (uShadowBiasConstant + uShadowBiasSlope * slope);
 
-    // 3x3 percentage closer filtering
+    if (!uShadowPcf)
+    {
+        float closest = texture(uShadowMap, vec3(coords.xy, layer)).r;
+        return coords.z - bias > closest ? 1.0 : 0.0;
+    }
+
     float shadow = 0.0;
     vec2 texelSize = 1.0 / vec2(textureSize(uShadowMap, 0).xy);
     for (int x = -1; x <= 1; ++x)

@@ -32,6 +32,19 @@ add_subdirectory(${VENDOR_DIR}/assimp bin)
 
 find_package(OpenGL REQUIRED)
 
+set(IMGUI_DIR ${VENDOR_DIR}/imgui)
+add_library(imgui STATIC
+    ${IMGUI_DIR}/imgui.cpp
+    ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp
+    ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+)
+target_include_directories(imgui SYSTEM PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/backends)
+target_link_libraries(imgui PUBLIC glfw)
+
 # ----------------------------------------------------------------------------
 # Renderer
 # ----------------------------------------------------------------------------
@@ -56,6 +69,7 @@ set(SOURCES
     src/rendering/LightManager.cpp
     src/rendering/Material.cpp
     src/rendering/Mesh.cpp
+    src/rendering/Primitives.cpp
     src/rendering/RenderPass.cpp
     src/rendering/Renderer.cpp
     src/rendering/Skybox.cpp
@@ -66,6 +80,8 @@ set(SOURCES
     src/scene/Camera.cpp
     src/scene/Entity.cpp
     src/scene/Scene.cpp
+
+    src/ui/DebugUI.cpp
 
     ${VENDOR_DIR}/glad/src/glad.c
     ${VENDOR_DIR}/stb_image/stb_image.cpp
@@ -82,7 +98,7 @@ target_include_directories(opengl_renderer SYSTEM PRIVATE
     ${VENDOR_DIR}/entt/single_include
 )
 
-target_link_libraries(opengl_renderer PRIVATE glfw assimp OpenGL::GL ${CMAKE_DL_LIBS})
+target_link_libraries(opengl_renderer PRIVATE glfw assimp imgui OpenGL::GL ${CMAKE_DL_LIBS})
 
 # Lets the executable find config.txt and res/ wherever it is launched from
 target_compile_definitions(opengl_renderer PRIVATE

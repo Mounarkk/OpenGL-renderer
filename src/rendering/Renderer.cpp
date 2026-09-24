@@ -26,7 +26,10 @@ ForwardRenderer::ForwardRenderer(const int width, const int height) {
   mPostProcessingPass->resize(width, height);
 }
 
-void ForwardRenderer::render(const FrameContext &frame) {
+void ForwardRenderer::render(const FrameContext &cameraFrame) {
+  FrameContext frame = cameraFrame;
+  frame.settings = mSettings;
+
   // Grouping by material limits texture rebinds in the lighting pass
   std::sort(mCommandQueue.begin(), mCommandQueue.end(),
             [](const RenderCommand &a, const RenderCommand &b) {
@@ -41,6 +44,7 @@ void ForwardRenderer::render(const FrameContext &frame) {
   mPostProcessingPass->setSourceTexture(mLightingPass->getColorTexture());
   mPostProcessingPass->execute(mCommandQueue, frame);
 
+  mLastDrawCount = mCommandQueue.size();
   mCommandQueue.clear();
 }
 
@@ -49,8 +53,4 @@ void ForwardRenderer::resize(const int width, const int height) {
     return;
   mLightingPass->resize(width, height);
   mPostProcessingPass->resize(width, height);
-}
-
-void ForwardRenderer::setShowCascades(const bool show) {
-  mLightingPass->setShowCascades(show);
 }
