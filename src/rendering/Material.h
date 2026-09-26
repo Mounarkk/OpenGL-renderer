@@ -1,6 +1,7 @@
 #pragma once
 #include "../gl/Shader.h"
 #include "../gl/Texture.h"
+#include "ShaderInterface.h"
 
 #include <memory>
 
@@ -10,24 +11,18 @@ enum class TextureType { Albedo, Specular, Normal };
 /**
  * Surface description for the Blinn-Phong forward shader.
  *
- * Each map has a fixed texture unit. When a map is missing, a neutral 1x1
- * texture is bound instead and the matching color factor is used, so a
- * material coming from an untextured OBJ still renders with its Kd/Ks colors.
- *
- * Texture unit 0 is left free for the shadow map.
+ * Each map has a fixed texture unit (see ShaderInterface). When a map is
+ * missing, a neutral 1x1 texture is bound instead and the matching color
+ * factor is used, so a material coming from an untextured OBJ still renders
+ * with its Kd/Ks colors.
  */
 class Material {
 public:
-  static constexpr int kAlbedoUnit = 1;
-  static constexpr int kSpecularUnit = 2;
-  static constexpr int kNormalUnit = 3;
-
-  /// Binds every map and factor to the `uMaterial` uniform struct.
+  /// Binds every map to its unit and sets the `uMaterial` factors.
   void bind(const Shader &shader) const;
 
   /// Binds only the albedo map, for passes that just need alpha testing.
-  void bindAlbedo(const Shader &shader, const std::string &uniform,
-                  int unit) const;
+  void bindAlbedo() const;
 
   /// Multiplies the albedo map (linear RGB).
   void setAlbedo(const glm::vec3 &albedo) { mAlbedo = albedo; }

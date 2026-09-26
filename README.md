@@ -1,15 +1,18 @@
 # OpenGL Renderer
 
-A small real-time renderer in C++17 and OpenGL 3.3 that I use as a playground
+A small real-time renderer in C++17 and OpenGL 4.5 that I use as a playground
 to implement rendering techniques from scratch.
 
 ![Cascaded shadow maps](docs/images/shadows.jpg)
 
 ## Features
 
-- Forward Blinn-Phong lighting with a directional light, point lights and a spot light
-- Cascaded shadow maps for the sun: 4 cascades rendered in one pass with a
-  geometry shader, stabilized against shimmering, filtered with 3x3 PCF
+- Forward Blinn-Phong lighting: a sun plus up to 64 point and 16 spot lights,
+  all ECS entities with a range
+- Cascaded shadow maps for the sun: 4 cascades rendered in one pass with
+  geometry shader instancing, per-cascade culling, stabilized against
+  shimmering, filtered with 3x3 PCF
+- Uniform buffers for per-frame data, direct state access, frustum culling
 - Normal mapping, alpha-tested foliage (shadows included)
 - sRGB-correct pipeline: HDR color target, gamma correction in post-process
 - Model loading through Assimp (OBJ, glTF, FBX...), textures cached and shared
@@ -21,12 +24,14 @@ to implement rendering techniques from scratch.
 |---|---|
 | ![Cascades](docs/images/cascades.jpg) | ![Sponza](docs/images/sponza.jpg) |
 
-How the shadows work is described in [docs/cascaded-shadow-maps.md](docs/cascaded-shadow-maps.md).
+How the shadows work is described in [docs/cascaded-shadow-maps.md](docs/cascaded-shadow-maps.md),
+and how C++ and the shaders share data in [docs/shader-interface.md](docs/shader-interface.md).
 
 ## Building
 
 Every dependency is vendored in `vendor/` (GLFW, glad, GLM, Assimp, EnTT,
-spdlog, stb, Dear ImGui). You only need CMake 3.10+ and a C++17 compiler.
+spdlog, stb, Dear ImGui). You need CMake 3.10+, a C++17 compiler and a GPU
+driver supporting OpenGL 4.5 (Linux or Windows, macOS stops at 4.1).
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -77,7 +82,7 @@ src/
   resource/     Assimp import, texture/shader/model caches
   scene/        EnTT scene, components, camera
   ui/           Dear ImGui debug panel
-res/shaders/    GLSL sources
+res/shaders/    GLSL sources, common/ holds the shared uniform blocks
 ```
 
 A frame goes through `ForwardRenderer`: shadow pass, lighting pass into an HDR

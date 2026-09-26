@@ -1,17 +1,16 @@
 #pragma once
 #include "../rendering/RendererSettings.h"
 #include "../scene/Camera.h"
-
-#include <cstddef>
+#include "../scene/Scene.h"
 
 struct GLFWwindow;
 
 /// What the debug panel reads and edits during a frame.
 struct DebugUIContext {
   RendererSettings &settings;
+  const RenderStats &stats;
+  Scene &scene;
   Camera &camera;
-  float deltaTime;
-  size_t drawCount;
   bool cameraMode; ///< True while the mouse drives the camera
   bool &screenshotRequested;
 };
@@ -46,4 +45,9 @@ public:
 
 private:
   bool mVisible = true;
+
+  static void buildSunSection(Scene &scene);
+  static void buildShadowSection(RendererSettings &settings);
+  static void buildLocalLightSection(const DebugUIContext &context);
+  static void buildCameraSection(Camera &camera);
 };

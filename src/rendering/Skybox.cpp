@@ -1,6 +1,8 @@
 #include "Skybox.h"
 #include "../core/Config.h"
 #include "../core/Logger.h"
+#include "../resource/ResourceManager.h"
+#include "ShaderInterface.h"
 
 #include <GLFW/glfw3.h>
 #include <stb_image.h>
@@ -35,13 +37,12 @@ Skybox::Skybox(const std::string &directory) {
                                             "top.jpg",   "bottom.jpg",
                                             "front.jpg", "back.jpg"};
 
-  glGenTextures(1, &mCubeMapTexID);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, mCubeMapTexID);
-
   // Cube map faces follow the image convention (top row first)
   stbi_set_flip_vertically_on_load(false);
-  for (size_t i = 0; i < faces.size(); ++i) {
-    const std::string path = directory + faces[i];
+  glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mCubeMapTexID);
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+  for (size_t face = 0; face < faces.size(); ++face) {
+    const std::string path = directory + faces[face];
     int width, height, channels;
     unsigned char *data =
         stbi_load(path.c_str(), &width, &height, &channels, 3);
@@ -49,29 +50,33 @@ Skybox::Skybox(const std::string &directory) {
       Logger::get()->error("Failed to load skybox face {}", path);
       continue;
     }
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + static_cast<GLenum>(i), 0,
-                 GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+    // Storage is allocated with the size of the first face found
+    if (!mAllocated) {
+      glTextureStorage2D(mCubeMapTexID, 1, GL_SRGB8, width, height);
+      mAllocated = true;
+    }
+    // With DSA, cube map faces are the layers 0 to 5 of the texture
+    glTextureSubImage3D(mCubeMapTexID, 0, 0, 0, static_cast<GLint>(face), width,
+                        height, 1, GL_RGB, GL_UNSIGNED_BYTE, data);
     stbi_image_free(data);
   }
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(mCubeMapTexID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTextureParameteri(mCubeMapTexID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTextureParameteri(mCubeMapTexID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(mCubeMapTexID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(mCubeMapTexID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-  mVAO = std::make_unique<VertexArray>();
   mVBO = std::make_unique<VertexBuffer>(kCubeVertices, sizeof(kCubeVertices));
+  mVAO = std::make_unique<VertexArray>();
   VertexBufferLayout layout;
   layout.push(GL_FLOAT, 3);
-  mVAO->addBuffer(*mVBO, layout);
-  VertexArray::unbind();
+  mVAO->setVertexBuffer(*mVBO, layout);
 
   const std::string shaderDir = Config::getShaderPath();
-  mShader = std::make_unique<Shader>(shaderDir + "skybox.vert",
-                                     shaderDir + "skybox.frag");
+  mShader = ResourceManager::loadShader(shaderDir + "skybox.vert",
+                                        shaderDir + "skybox.frag");
 }
 
 Skybox::~Skybox() {
@@ -79,19 +84,12 @@ Skybox::~Skybox() {
     glDeleteTextures(1, &mCubeMapTexID);
 }
 
-void Skybox::render(const glm::mat4 &projMat, const glm::mat4 &viewMat,
-                    const glm::vec3 &sunDirection) const {
+void Skybox::render() const {
+  // Drawn at the far plane: only fills pixels no geometry wrote to
   glDepthFunc(GL_LEQUAL);
 
   mShader->use();
-  // Dropping the translation keeps the sky infinitely far away
-  mShader->setMat4("projection", projMat);
-  mShader->setMat4("view", glm::mat4(glm::mat3(viewMat)));
-  mShader->setInt("skybox", 0);
-  mShader->setVec3("uSunDirection", -glm::normalize(sunDirection));
-
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_CUBE_MAP, mCubeMapTexID);
+  glBindTextureUnit(ShaderInterface::kSkyboxUnit, mCubeMapTexID);
   mVAO->bind();
   glDrawArrays(GL_TRIANGLES, 0, 36);
   VertexArray::unbind();

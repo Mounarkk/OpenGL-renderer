@@ -31,7 +31,9 @@ public:
   /// Deletes the GL texture. Safe to call several times.
   void clean();
 
-  void bind(GLuint slot = 0) const;
+  /// Binds the texture to a texture unit, the one a sampler's
+  /// `layout(binding = N)` refers to.
+  void bind(GLuint unit) const;
 
   [[nodiscard]] GLuint getID() const { return mID; }
   [[nodiscard]] int getChannels() const { return mChannels; }

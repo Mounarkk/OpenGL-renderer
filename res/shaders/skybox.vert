@@ -1,14 +1,15 @@
-#version 330 core
+#version 450 core
+#include "common/frame.glsl"
+
 layout (location = 0) in vec3 aPos;
 
 out vec3 TexCoords;
 
-uniform mat4 projection;
-uniform mat4 view;
-
 void main()
 {
     TexCoords = aPos;
-    vec4 pos = projection * view * vec4(aPos, 1.0);
+    // Dropping the translation keeps the sky infinitely far away
+    vec4 pos = frame.projection * mat4(mat3(frame.view)) * vec4(aPos, 1.0);
+    // z = w puts the sky on the far plane after the perspective divide
     gl_Position = pos.xyww;
 }

@@ -1,9 +1,12 @@
 #pragma once
 #include "../gl/FrameBuffer.h"
 #include "../gl/Shader.h"
+#include "../gl/UniformBuffer.h"
+#include "Frustum.h"
 #include "Material.h"
 #include "Mesh.h"
 #include "RendererSettings.h"
+#include "ShaderInterface.h"
 #include "Skybox.h"
 
 #include <glm.hpp>
@@ -11,14 +14,15 @@
 #include <memory>
 #include <vector>
 
-/// One mesh to draw this frame, with its world matrix already computed.
+/// One mesh to draw this frame, with its world matrix and bounds computed.
 struct RenderCommand {
   glm::mat4 model;
+  AABB worldBounds;
   std::shared_ptr<Mesh> mesh;
   std::shared_ptr<Material> material;
 };
 
-/// Camera state shared by every pass for the current frame.
+/// Camera state and options shared by every pass for the current frame.
 struct FrameContext {
   glm::mat4 view{1.0f};
   glm::mat4 projection{1.0f};
@@ -27,22 +31,10 @@ struct FrameContext {
   float aspectRatio = 1.0f;
   float nearPlane = 0.1f;
   float farPlane = 100.0f;
+
+  /// Filled by the renderer
   RendererSettings settings;
-};
-
-/// Hard limit, must match MAX_CASCADES in the shaders.
-constexpr int kMaxCascades = 8;
-
-/// Everything the lighting pass needs to sample the cascaded shadow map.
-struct ShadowData {
-  GLuint shadowMapArray = 0;
-  int cascadeCount = 0;
-  std::vector<glm::mat4> lightSpaceMatrices; ///< World to light clip space
-  std::vector<float> cascadeFarPlanes;       ///< View space distances
-  std::vector<float> cascadeTexelSizes;      ///< World size of one texel
-  /// Depth range covered by one texel-sized distance, in the [0, 1] depth
-  /// of the shadow map. Used to express the depth bias in texels.
-  std::vector<float> cascadeTexelDepths;
+  const ShaderInterface::LightUniforms *lights = nullptr;
 };
 
 /// A step of a renderer's frame.
@@ -63,35 +55,41 @@ public:
  * The camera frustum is cut into slices along its depth. Each slice gets its
  * own orthographic light projection fitted around its bounding sphere and a
  * layer of a depth texture array. All layers are filled in a single draw per
- * mesh: the geometry shader duplicates each triangle into every layer.
+ * mesh: the geometry shader runs once per cascade (instancing) and routes
+ * the triangle to its layer. Meshes are culled per cascade with a bit mask.
  *
  * Fitting a sphere instead of a box keeps the projection size constant when
  * the camera rotates, and snapping it to the texel grid removes the
  * shimmering of shadow edges when the camera moves.
+ *
+ * The cascade data is published in the shadow uniform block, read by the
+ * lighting pass.
  */
 class ShadowMappingPass final : public RenderPass {
 public:
-  /**
-   * @param mapSize Width and height of each cascade, in texels
-   * @param cascadeCount Number of cascades, at most kMaxCascades
-   */
-  ShadowMappingPass(int mapSize, int cascadeCount);
+  /// @param mapSize Width and height of each cascade, in texels
+  explicit ShadowMappingPass(int mapSize);
 
   void execute(const std::vector<RenderCommand> &commands,
                const FrameContext &frame) override;
 
-  [[nodiscard]] const ShadowData &getShadowData() const { return mShadowData; }
+  [[nodiscard]] GLuint getShadowMap() const { return mFBO->getDepthTexture(); }
+
+  /// Meshes drawn into at least one cascade during the last execute().
+  [[nodiscard]] size_t getDrawnCount() const { return mDrawnCount; }
 
 private:
   std::shared_ptr<Shader> mShader;
   std::unique_ptr<FrameBuffer> mFBO;
+  UniformBuffer mUniformBuffer;
+  ShaderInterface::ShadowUniforms mUniforms{};
   int mMapSize;
-  int mCascadeCount;
-  ShadowData mShadowData;
+  size_t mDrawnCount = 0;
 
   void updateCascades(const FrameContext &frame);
 
   /// Light view-projection for the slice [nearPlane, farPlane] of the camera.
+  /// Also returns the world size and the depth range of one texel.
   glm::mat4 computeCascadeMatrix(const FrameContext &frame, float nearPlane,
                                  float farPlane, float &texelSize,
                                  float &texelDepth) const;
@@ -99,8 +97,7 @@ private:
 
 /**
  * Forward Blinn-Phong lighting into an HDR color target, followed by the
- * light markers and the skybox. Shadows come from the ShadowData set before
- * execute().
+ * light markers and the skybox. Reads the shadow map rendered before.
  */
 class ForwardLightingPass final : public RenderPass {
 public:
@@ -110,17 +107,21 @@ public:
                const FrameContext &frame) override;
   void resize(int width, int height) override;
 
-  void setShadowData(const ShadowData &data) { mShadowData = &data; }
+  void setShadowMap(const GLuint texture) { mShadowMap = texture; }
 
   [[nodiscard]] GLuint getColorTexture() const {
     return mFBO->getColorTexture();
   }
 
+  /// Meshes that passed frustum culling during the last execute().
+  [[nodiscard]] size_t getDrawnCount() const { return mDrawnCount; }
+
 private:
   std::shared_ptr<Shader> mShader;
   std::unique_ptr<FrameBuffer> mFBO;
   std::unique_ptr<Skybox> mSkybox;
-  const ShadowData *mShadowData = nullptr;
+  GLuint mShadowMap = 0;
+  size_t mDrawnCount = 0;
 
   // Light markers
   std::shared_ptr<Shader> mGizmoShader;

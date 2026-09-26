@@ -3,7 +3,9 @@
 Notes on how the directional light shadows are implemented, and why.
 
 Code: `ShadowMappingPass` in `src/rendering/RenderPass.cpp`, the
-`shadowm_shader.*` shaders and `calcShadow` in `forward_shader.frag`.
+`shadowm_shader.*` shaders and `sunShadow` in `forward_shader.frag`. The
+cascade data reaches the lighting shader through the shadow uniform block
+(`res/shaders/common/shadows.glsl`).
 
 ## Splitting the frustum
 
@@ -46,10 +48,16 @@ light is flattened onto the near plane instead of being clipped.
 ## Rendering all cascades in one pass
 
 The framebuffer has the whole texture array attached, which makes it a
-layered framebuffer. The vertex shader only applies the model matrix, and the
-geometry shader emits every triangle once per cascade with the matching light
-matrix and `gl_Layer`. The scene is submitted once instead of once per
-cascade.
+layered framebuffer. The vertex shader only applies the model matrix. The
+geometry shader is instanced (`invocations = CASCADE_COUNT`): each invocation
+handles one cascade and writes the triangle to its layer through `gl_Layer`.
+The scene is submitted once instead of once per cascade.
+
+Each mesh is tested on the CPU against the frustum of every cascade, and the
+result is passed as a bit mask. Invocations whose bit is not set return
+immediately, and meshes outside every cascade are not drawn at all. The near
+plane is ignored by this test, since casters in front of it are clamped onto
+it rather than clipped.
 
 The shadow fragment shader samples the albedo alpha and discards cut-out
 texels, so foliage and fences cast the right shape.

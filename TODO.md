@@ -1,10 +1,11 @@
 ## Rendering
 - [x] Directional light cascaded shadow maps
+- [x] OpenGL 4.5, uniform buffers, ECS lights with a range, frustum culling
+- [ ] PBR materials and tone mapping
+- [ ] Spot light shadows, point light shadow atlas
+- [ ] Clustered light culling (compute)
+- [ ] Volumetric fog (froxels)
 - [ ] Blend between cascades
-- [ ] Tone mapping and exposure (the HDR target is only clamped for now)
-- [ ] Shadows for point lights (cube maps) and spot lights
-- [ ] PBR materials (metallic/roughness from glTF)
-- [ ] Deferred and clustered renderers
 
 ## Assets
 - [ ] Embedded textures (.glb)

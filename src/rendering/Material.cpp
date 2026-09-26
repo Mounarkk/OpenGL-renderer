@@ -16,21 +16,17 @@ std::shared_ptr<Texture> &flatNormalTexture() {
   return texture;
 }
 
-void bindMap(const Shader &shader, const std::string &uniform,
-             const std::shared_ptr<Texture> &map,
-             const std::shared_ptr<Texture> &fallback, const int unit) {
+void bindMap(const std::shared_ptr<Texture> &map,
+             const std::shared_ptr<Texture> &fallback, const GLuint unit) {
   (map ? map : fallback)->bind(unit);
-  shader.setInt(uniform, unit);
 }
 } // namespace
 
 void Material::bind(const Shader &shader) const {
-  bindMap(shader, "uMaterial.albedoMap", mAlbedoMap, whiteTexture(),
-          kAlbedoUnit);
-  bindMap(shader, "uMaterial.specularMap", mSpecularMap, whiteTexture(),
-          kSpecularUnit);
-  bindMap(shader, "uMaterial.normalMap", mNormalMap, flatNormalTexture(),
-          kNormalUnit);
+  // The samplers declare these units with layout(binding), nothing to set
+  bindMap(mAlbedoMap, whiteTexture(), ShaderInterface::kAlbedoUnit);
+  bindMap(mSpecularMap, whiteTexture(), ShaderInterface::kSpecularUnit);
+  bindMap(mNormalMap, flatNormalTexture(), ShaderInterface::kNormalUnit);
 
   shader.setVec3("uMaterial.albedo", mAlbedo);
   shader.setVec3("uMaterial.specular", mSpecular);
@@ -38,9 +34,8 @@ void Material::bind(const Shader &shader) const {
   shader.setBool("uMaterial.hasNormalMap", mNormalMap != nullptr);
 }
 
-void Material::bindAlbedo(const Shader &shader, const std::string &uniform,
-                          const int unit) const {
-  bindMap(shader, uniform, mAlbedoMap, whiteTexture(), unit);
+void Material::bindAlbedo() const {
+  bindMap(mAlbedoMap, whiteTexture(), ShaderInterface::kAlbedoUnit);
 }
 
 void Material::setTexture(const TextureType type,

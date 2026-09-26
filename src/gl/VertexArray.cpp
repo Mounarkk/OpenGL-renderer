@@ -2,9 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include <cstdint>
-
-VertexArray::VertexArray() { glGenVertexArrays(1, &mRendererId); }
+VertexArray::VertexArray() { glCreateVertexArrays(1, &mRendererId); }
 
 VertexArray::~VertexArray() { clean(); }
 
@@ -29,22 +27,28 @@ VertexArray &VertexArray::operator=(VertexArray &&other) noexcept {
   return *this;
 }
 
-void VertexArray::addBuffer(const VertexBuffer &vb,
-                            const VertexBufferLayout &layout) const {
-  bind();
-  vb.bind();
+void VertexArray::setVertexBuffer(const VertexBuffer &vb,
+                                  const VertexBufferLayout &layout) const {
+  // All attributes come from binding slot 0, interleaved
+  constexpr GLuint bindingIndex = 0;
+  glVertexArrayVertexBuffer(mRendererId, bindingIndex, vb.getID(), 0,
+                            layout.getStride());
 
+  GLuint offset = 0;
   const auto &elements = layout.getElements();
-  std::uintptr_t offset = 0;
-  for (GLuint i = 0; i < elements.size(); ++i) {
-    const auto &[type, count, normalized] = elements[i];
-    glEnableVertexAttribArray(i);
-    glVertexAttribPointer(i, count, type, normalized ? GL_TRUE : GL_FALSE,
-                          layout.getStride(),
-                          reinterpret_cast<const void *>(offset));
-    offset += static_cast<std::uintptr_t>(
-        count * VertexBufferElement::getTypeSize(type));
+  for (GLuint location = 0; location < elements.size(); ++location) {
+    const auto &[type, count, normalized] = elements[location];
+    glEnableVertexArrayAttrib(mRendererId, location);
+    glVertexArrayAttribFormat(mRendererId, location, count, type,
+                              normalized ? GL_TRUE : GL_FALSE, offset);
+    glVertexArrayAttribBinding(mRendererId, location, bindingIndex);
+    offset +=
+        static_cast<GLuint>(count * VertexBufferElement::getTypeSize(type));
   }
+}
+
+void VertexArray::setIndexBuffer(const IndexBuffer &ib) const {
+  glVertexArrayElementBuffer(mRendererId, ib.getID());
 }
 
 void VertexArray::bind() const { glBindVertexArray(mRendererId); }

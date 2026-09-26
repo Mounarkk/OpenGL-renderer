@@ -1,6 +1,7 @@
 #include "ResourceManager.h"
 #include "../core/Logger.h"
 #include "../core/RendererException.h"
+#include "../rendering/ShaderInterface.h"
 #include "../scene/Scene.h"
 #include "ModelLoader.h"
 
@@ -36,7 +37,8 @@ std::shared_ptr<Shader> ResourceManager::loadShader(const std::string &vsPath,
     if (auto shader = it->second.lock())
       return shader;
 
-  auto shader = std::make_shared<Shader>(vsPath, fsPath, gsPath);
+  auto shader = std::make_shared<Shader>(vsPath, fsPath, gsPath,
+                                         ShaderInterface::defines());
   sShaderCache[key] = shader;
   Logger::get()->debug("Compiled shader {} | {} | {}", vsPath, fsPath, gsPath);
   return shader;

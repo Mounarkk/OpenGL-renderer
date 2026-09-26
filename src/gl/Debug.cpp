@@ -1,23 +1,22 @@
 #include "Debug.h"
 #include "../core/Logger.h"
 
-#include <glad/glad.h>
-
 void enableGLDebugging() {
-  if (!GLAD_GL_ARB_debug_output) {
-    Logger::get()->warn("GL_ARB_debug_output not supported, GL errors will "
-                        "not be reported");
-    return;
-  }
-
-  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-  glDebugMessageCallbackARB(
+  glEnable(GL_DEBUG_OUTPUT);
+  glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+  glDebugMessageCallback(
       [](GLenum, GLenum, GLuint, const GLenum severity, GLsizei,
          const GLchar *message, const void *) {
-        if (severity == GL_DEBUG_SEVERITY_HIGH_ARB)
+        if (severity == GL_DEBUG_SEVERITY_HIGH)
           Logger::get()->error("OpenGL: {}", message);
-        else if (severity == GL_DEBUG_SEVERITY_MEDIUM_ARB)
+        else if (severity == GL_DEBUG_SEVERITY_MEDIUM)
           Logger::get()->warn("OpenGL: {}", message);
       },
       nullptr);
 }
+
+GLDebugGroup::GLDebugGroup(const char *name) {
+  glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
+}
+
+GLDebugGroup::~GLDebugGroup() { glPopDebugGroup(); }

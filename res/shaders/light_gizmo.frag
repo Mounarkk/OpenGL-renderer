@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 out vec4 FragColor;
 
 // Unlit marker showing where a light is and which color it emits.

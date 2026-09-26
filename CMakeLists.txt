@@ -61,16 +61,18 @@ set(SOURCES
     src/gl/IndexBuffer.cpp
     src/gl/Shader.cpp
     src/gl/Texture.cpp
+    src/gl/UniformBuffer.cpp
     src/gl/VertexArray.cpp
     src/gl/VertexBuffer.cpp
 
     src/input/InputHandler.cpp
 
-    src/rendering/LightManager.cpp
+    src/rendering/Frustum.cpp
     src/rendering/Material.cpp
     src/rendering/Mesh.cpp
     src/rendering/Primitives.cpp
     src/rendering/RenderPass.cpp
+    src/rendering/ShaderInterface.cpp
     src/rendering/Renderer.cpp
     src/rendering/Skybox.cpp
 

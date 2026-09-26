@@ -30,7 +30,7 @@ struct VertexBufferElement {
  * VertexBufferLayout layout;
  * layout.push(GL_FLOAT, 3); // location 0: position
  * layout.push(GL_FLOAT, 2); // location 1: uv
- * vao.addBuffer(vbo, layout);
+ * vao.setVertexBuffer(vbo, layout);
  * ```
  */
 class VertexBufferLayout {

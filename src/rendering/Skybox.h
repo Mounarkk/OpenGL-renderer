@@ -22,16 +22,14 @@ public:
   Skybox(const Skybox &) = delete;
   Skybox &operator=(const Skybox &) = delete;
 
-  /**
-   * @param sunDirection Direction the sunlight travels in (towards the
-   * ground). A sun disc is drawn in the opposite direction.
-   */
-  void render(const glm::mat4 &projMat, const glm::mat4 &viewMat,
-              const glm::vec3 &sunDirection) const;
+  /// Draws the sky. Reads the camera and the sun from the frame and light
+  /// uniform blocks, which must be bound.
+  void render() const;
 
 private:
   GLuint mCubeMapTexID = 0;
   std::unique_ptr<VertexArray> mVAO;
   std::unique_ptr<VertexBuffer> mVBO;
-  std::unique_ptr<Shader> mShader;
+  std::shared_ptr<Shader> mShader;
+  bool mAllocated = false;
 };

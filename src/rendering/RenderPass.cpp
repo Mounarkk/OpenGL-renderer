@@ -1,8 +1,7 @@
 #include "RenderPass.h"
 #include "../core/Config.h"
-#include "../core/Logger.h"
+#include "../gl/Debug.h"
 #include "../resource/ResourceManager.h"
-#include "LightManager.h"
 #include "Primitives.h"
 
 #include <gtc/matrix_transform.hpp>
@@ -12,14 +11,12 @@
 #include <cmath>
 #include <string>
 
+using namespace ShaderInterface;
+
 namespace {
 /// How far behind a cascade, towards the light, occluders are still captured,
 /// as a multiple of the cascade radius.
 constexpr float kCasterDistanceFactor = 4.0f;
-
-std::string indexed(const char *name, const size_t index) {
-  return std::string(name) + "[" + std::to_string(index) + "]";
-}
 
 std::array<glm::vec3, 8> frustumCornersWorldSpace(const glm::mat4 &proj,
                                                   const glm::mat4 &view) {
@@ -44,45 +41,34 @@ std::array<glm::vec3, 8> frustumCornersWorldSpace(const glm::mat4 &proj,
 // ShadowMappingPass
 // ---------------------------------------------------------------------------
 
-ShadowMappingPass::ShadowMappingPass(const int mapSize, const int cascadeCount)
-    : mMapSize(mapSize),
-      mCascadeCount(std::clamp(cascadeCount, 1, kMaxCascades)) {
+ShadowMappingPass::ShadowMappingPass(const int mapSize)
+    : mUniformBuffer(sizeof(ShadowUniforms)), mMapSize(mapSize) {
   const std::string dir = Config::getShaderPath();
   mShader = ResourceManager::loadShader(dir + "shadowm_shader.vert",
                                         dir + "shadowm_shader.frag",
                                         dir + "shadowm_shader.geom");
   mFBO = std::make_unique<FrameBuffer>(
-      mMapSize, mMapSize, FrameBufferType::CascadedShadowMap, mCascadeCount);
-
-  mShadowData.shadowMapArray = mFBO->getDepthTexture();
-  mShadowData.cascadeCount = mCascadeCount;
+      mMapSize, mMapSize, FrameBufferType::CascadedShadowMap, kCascadeCount);
 }
 
 void ShadowMappingPass::updateCascades(const FrameContext &frame) {
-  mShadowData.lightSpaceMatrices.clear();
-  mShadowData.cascadeFarPlanes.clear();
-  mShadowData.cascadeTexelSizes.clear();
-  mShadowData.cascadeTexelDepths.clear();
-
   // "Practical split scheme": logarithmic splits give each cascade the same
   // perspective aliasing, uniform splits avoid tiny first cascades. Blend both.
   const float lambda = frame.settings.cascadeSplitLambda;
   const float n = frame.nearPlane;
   const float f = frame.farPlane;
   float sliceNear = n;
-  for (int i = 1; i <= mCascadeCount; ++i) {
-    const float p = static_cast<float>(i) / static_cast<float>(mCascadeCount);
+  for (int i = 0; i < kCascadeCount; ++i) {
+    const float p = static_cast<float>(i + 1) / kCascadeCount;
     const float logSplit = n * std::pow(f / n, p);
     const float uniformSplit = n + (f - n) * p;
     const float sliceFar = lambda * logSplit + (1.0f - lambda) * uniformSplit;
 
     float texelSize = 0.0f;
     float texelDepth = 0.0f;
-    mShadowData.lightSpaceMatrices.push_back(computeCascadeMatrix(
-        frame, sliceNear, sliceFar, texelSize, texelDepth));
-    mShadowData.cascadeFarPlanes.push_back(sliceFar);
-    mShadowData.cascadeTexelSizes.push_back(texelSize);
-    mShadowData.cascadeTexelDepths.push_back(texelDepth);
+    mUniforms.lightSpaceMatrices[i] =
+        computeCascadeMatrix(frame, sliceNear, sliceFar, texelSize, texelDepth);
+    mUniforms.cascades[i] = {sliceFar, texelSize, texelDepth, 0.0f};
     sliceNear = sliceFar;
   }
 }
@@ -107,8 +93,7 @@ glm::mat4 ShadowMappingPass::computeCascadeMatrix(const FrameContext &frame,
   // Quantized so that floating point noise does not change the projection
   radius = std::ceil(radius * 16.0f) / 16.0f;
 
-  const glm::vec3 lightDir =
-      LightManager::getInstance().getLights().directionalLight.direction;
+  const glm::vec3 lightDir = glm::vec3(frame.lights->sun.direction);
   const glm::vec3 up =
       std::abs(lightDir.y) > 0.99f ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
   const glm::mat4 lightView = glm::lookAt(center - lightDir, center, up);
@@ -137,12 +122,24 @@ glm::mat4 ShadowMappingPass::computeCascadeMatrix(const FrameContext &frame,
 
 void ShadowMappingPass::execute(const std::vector<RenderCommand> &commands,
                                 const FrameContext &frame) {
-  mShadowData.cascadeCount = frame.settings.shadowsEnabled ? mCascadeCount : 0;
-  if (!frame.settings.shadowsEnabled)
+  const auto &settings = frame.settings;
+  const bool enabled = settings.shadowsEnabled && frame.lights->counts.z != 0;
+
+  mUniforms.bias = {settings.shadowBiasConstant, settings.shadowBiasSlope,
+                    settings.shadowNormalOffset, 0.0f};
+  mUniforms.flags = {enabled, settings.shadowPcf, settings.showCascades, 0};
+  if (enabled)
+    updateCascades(frame);
+
+  // Published even when disabled, the lighting pass reads the flags
+  mUniformBuffer.update(&mUniforms, sizeof(mUniforms));
+  mUniformBuffer.bindBase(kShadowBlock);
+
+  mDrawnCount = 0;
+  if (!enabled)
     return;
 
-  updateCascades(frame);
-
+  GLDebugGroup group("Shadow pass");
   mFBO->bind();
   glEnable(GL_DEPTH_TEST);
   // Occluders between the light and the near plane are clamped to depth 0
@@ -150,18 +147,33 @@ void ShadowMappingPass::execute(const std::vector<RenderCommand> &commands,
   glEnable(GL_DEPTH_CLAMP);
   glClear(GL_DEPTH_BUFFER_BIT);
 
-  mShader->use();
-  mShader->setInt("uCascadeCount", mCascadeCount);
-  for (size_t i = 0; i < mShadowData.lightSpaceMatrices.size(); ++i)
-    mShader->setMat4(indexed("uLightSpaceMatrices", i),
-                     mShadowData.lightSpaceMatrices[i]);
+  // The near plane is ignored for the same reason: casters in front of it
+  // still land in the map thanks to depth clamping
+  std::vector<Frustum> cascades;
+  cascades.reserve(kCascadeCount);
+  for (const glm::mat4 &lightSpace : mUniforms.lightSpaceMatrices)
+    cascades.emplace_back(lightSpace);
 
-  // Alpha tested materials (foliage, fences, nets) must cut their shadows too
-  constexpr int albedoUnit = 1;
-  for (const auto &[model, mesh, material] : commands) {
-    material->bindAlbedo(*mShader, "uAlbedoMap", albedoUnit);
-    mShader->setMat4("uModel", model);
-    mesh->draw();
+  mShader->use();
+  for (const auto &command : commands) {
+    // One bit per cascade the mesh overlaps, the geometry shader skips the
+    // others
+    unsigned int mask = (1u << kCascadeCount) - 1u;
+    if (settings.frustumCulling) {
+      mask = 0;
+      for (int i = 0; i < kCascadeCount; ++i)
+        if (cascades[i].intersects(command.worldBounds, true))
+          mask |= 1u << i;
+      if (mask == 0)
+        continue;
+    }
+
+    // Alpha tested materials (foliage, fences, nets) cut their shadows too
+    command.material->bindAlbedo();
+    mShader->setMat4("uModel", command.model);
+    mShader->setUInt("uCascadeMask", mask);
+    command.mesh->draw();
+    ++mDrawnCount;
   }
 
   glDisable(GL_DEPTH_CLAMP);
@@ -185,13 +197,12 @@ ForwardLightingPass::ForwardLightingPass(const int width, const int height) {
 }
 
 void ForwardLightingPass::drawLightGizmos(const FrameContext &frame) const {
-  const auto &lightManager = LightManager::getInstance();
-  if (!lightManager.areLocalLightsEnabled())
-    return;
+  const auto &lights = *frame.lights;
 
   // Markers show the hue of the light at full brightness, whatever its
   // intensity, so that dim lights stay visible.
-  const auto markerColor = [](const glm::vec3 &color) {
+  const auto markerColor = [](const glm::vec4 &radiance) {
+    const glm::vec3 color(radiance);
     const float peak = std::max({color.r, color.g, color.b});
     return peak > 0.0f ? color / peak : glm::vec3(0.0f);
   };
@@ -200,79 +211,62 @@ void ForwardLightingPass::drawLightGizmos(const FrameContext &frame) const {
     glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
     model = glm::scale(model, glm::vec3(radius));
     mGizmoShader->setMat4("uModel", model);
-    mGizmoShader->setVec3("uColor", markerColor(color));
+    mGizmoShader->setVec3("uColor", color);
     mGizmoSphere->draw();
   };
 
   mGizmoShader->use();
-  mGizmoShader->setMat4("uViewProj", frame.projection * frame.view);
+  for (int i = 0; i < lights.counts.x; ++i) {
+    const auto &light = lights.pointLights[i];
+    drawMarker(glm::vec3(light.positionRange), 0.12f,
+               markerColor(light.radiance));
+  }
 
-  const auto &lights = lightManager.getLights();
-  for (const auto &light : lights.pointLights)
-    drawMarker(light.position, 0.12f, light.diffuse);
-
-  // The spot light gets a second, smaller sphere along its direction
-  const auto &spot = lights.spotLight;
-  drawMarker(spot.position, 0.12f, spot.diffuse);
-  drawMarker(spot.position + glm::normalize(spot.direction) * 0.25f, 0.06f,
-             spot.diffuse);
+  // Spot lights get a second, smaller sphere along their direction
+  for (int i = 0; i < lights.counts.y; ++i) {
+    const auto &spot = lights.spotLights[i];
+    const glm::vec3 position(spot.positionRange);
+    const glm::vec3 color = markerColor(spot.radianceInnerCos);
+    drawMarker(position, 0.12f, color);
+    drawMarker(position + glm::vec3(spot.directionOuterCos) * 0.25f, 0.06f,
+               color);
+  }
 }
 
 void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
                                   const FrameContext &frame) {
+  GLDebugGroup group("Lighting pass");
   mFBO->bind();
   glEnable(GL_DEPTH_TEST);
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  // Camera, lights and shadow data come from the uniform blocks, only the
+  // material and the model matrix change between draws
   mShader->use();
-  mShader->setMat4("uViewProj", frame.projection * frame.view);
-  mShader->setMat4("uView", frame.view);
-  mShader->setVec3("uViewPos", frame.cameraPosition);
-  mShader->setBool("uShowCascades", frame.settings.showCascades);
-  mShader->setFloat("uShadowBiasConstant", frame.settings.shadowBiasConstant);
-  mShader->setFloat("uShadowBiasSlope", frame.settings.shadowBiasSlope);
-  mShader->setFloat("uShadowNormalOffset", frame.settings.shadowNormalOffset);
-  mShader->setBool("uShadowPcf", frame.settings.shadowPcf);
+  glBindTextureUnit(kShadowMapUnit, mShadowMap);
 
-  // Texture unit 0 is reserved for the shadow map, see Material
-  const bool hasShadows = mShadowData && mShadowData->cascadeCount > 0;
-  mShader->setInt("uCascadeCount", hasShadows ? mShadowData->cascadeCount : 0);
-  if (hasShadows) {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, mShadowData->shadowMapArray);
-    mShader->setInt("uShadowMap", 0);
-    for (int i = 0; i < mShadowData->cascadeCount; ++i) {
-      mShader->setMat4(indexed("uLightSpaceMatrices", i),
-                       mShadowData->lightSpaceMatrices[i]);
-      mShader->setFloat(indexed("uCascadeFarPlanes", i),
-                        mShadowData->cascadeFarPlanes[i]);
-      mShader->setFloat(indexed("uCascadeTexelSizes", i),
-                        mShadowData->cascadeTexelSizes[i]);
-      mShader->setFloat(indexed("uCascadeTexelDepths", i),
-                        mShadowData->cascadeTexelDepths[i]);
-    }
-  }
-
-  LightManager::getInstance().bindLights(*mShader);
-
-  // Commands are sorted by material, skip redundant binds
+  const Frustum view(frame.projection * frame.view);
   const Material *boundMaterial = nullptr;
-  for (const auto &[model, mesh, material] : commands) {
-    if (material.get() != boundMaterial) {
-      material->bind(*mShader);
-      boundMaterial = material.get();
+  mDrawnCount = 0;
+  for (const auto &command : commands) {
+    if (frame.settings.frustumCulling && !view.intersects(command.worldBounds))
+      continue;
+
+    // Commands are sorted by material, skip redundant binds
+    if (command.material.get() != boundMaterial) {
+      command.material->bind(*mShader);
+      boundMaterial = command.material.get();
     }
-    mShader->setMat4("uModel", model);
-    mesh->draw();
+    mShader->setMat4("uModel", command.model);
+    command.mesh->draw();
+    ++mDrawnCount;
   }
 
   if (frame.settings.showLightGizmos)
     drawLightGizmos(frame);
 
-  mSkybox->render(
-      frame.projection, frame.view,
-      LightManager::getInstance().getLights().directionalLight.direction);
+  mSkybox->render();
 
   FrameBuffer::unbind();
 }
@@ -296,26 +290,23 @@ PostProcessingPass::PostProcessingPass() {
                                     -1.0f, 1.0f, 0.0f, 1.0f,  1.0f,  -1.0f,
                                     1.0f,  0.0f, 1.0f, 1.0f,  1.0f,  1.0f};
 
-  mQuadVAO = std::make_unique<VertexArray>();
   mQuadVBO = std::make_unique<VertexBuffer>(quadVertices, sizeof(quadVertices));
+  mQuadVAO = std::make_unique<VertexArray>();
   VertexBufferLayout layout;
   layout.push(GL_FLOAT, 2);
   layout.push(GL_FLOAT, 2);
-  mQuadVAO->addBuffer(*mQuadVBO, layout);
-  VertexArray::unbind();
+  mQuadVAO->setVertexBuffer(*mQuadVBO, layout);
 }
 
 void PostProcessingPass::execute(const std::vector<RenderCommand> &,
                                  const FrameContext &) {
+  GLDebugGroup group("Post-process pass");
   FrameBuffer::unbind();
   glViewport(0, 0, mWidth, mHeight);
   glDisable(GL_DEPTH_TEST);
 
   mShader->use();
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, mSourceTexture);
-  mShader->setInt("screenTexture", 0);
-
+  glBindTextureUnit(kScreenUnit, mSourceTexture);
   mQuadVAO->bind();
   glDrawArrays(GL_TRIANGLES, 0, 6);
   VertexArray::unbind();

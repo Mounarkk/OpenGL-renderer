@@ -30,7 +30,8 @@ public:
   static std::shared_ptr<Texture> loadTexture(const std::string &path,
                                               bool sRGB);
 
-  /// Throws a ShaderException on compilation or link errors.
+  /// Compiles with the ShaderInterface defines. Throws a ShaderException on
+  /// compilation or link errors.
   static std::shared_ptr<Shader> loadShader(const std::string &vsPath,
                                             const std::string &fsPath,
                                             const std::string &gsPath = "");

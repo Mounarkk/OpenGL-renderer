@@ -4,7 +4,6 @@
 #include "../core/Logger.h"
 #include "../core/RendererException.h"
 #include "../gl/Debug.h"
-#include "../rendering/LightManager.h"
 #include "../rendering/Material.h"
 #include "../rendering/Mesh.h"
 #include "../rendering/Primitives.h"
@@ -14,19 +13,28 @@
 #include <glad/glad.h>
 #include <stb_image_write.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <filesystem>
 #include <iomanip>
+#include <iterator>
 #include <sstream>
+#include <string>
 #include <utility>
 #include <vector>
 
 namespace {
-/// Radians per second when rotating the sun with the arrow keys.
-constexpr float kSunRotationSpeed = 0.6f;
+/// Degrees per second when moving the sun with the arrow keys.
+constexpr float kSunRotationSpeed = 35.0f;
+
+/// Keeps the sun between the horizon and the zenith. Below a couple of
+/// degrees shadows become extremely long, at the zenith the light view basis
+/// of the cascades is degenerate.
+constexpr float kMinSunElevation = 2.0f;
+constexpr float kMaxSunElevation = 89.0f;
 
 /// Frames rendered before an automatic screenshot, so that everything
 /// (window size, first shadow maps) has settled.
@@ -59,21 +67,19 @@ void Application::Initialize() {
   if (!glfwInit())
     throw RendererException("Failed to initialize GLFW");
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  // 4.5 for direct state access, 4.3 would be enough for the rest
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-#endif
-#ifdef __APPLE__
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
   m_Window =
       glfwCreateWindow(m_Width, m_Height, m_Title.c_str(), nullptr, nullptr);
   if (!m_Window) {
     glfwTerminate();
-    throw RendererException("Failed to create the window, OpenGL 3.3 core is "
+    throw RendererException("Failed to create the window, OpenGL 4.5 core is "
                             "required");
   }
 
@@ -97,10 +103,7 @@ void Application::Initialize() {
   // The framebuffer can differ from the window size on high DPI screens
   glfwGetFramebufferSize(m_Window, &m_Width, &m_Height);
   m_Renderer = std::make_unique<ForwardRenderer>(m_Width, m_Height);
-  if (m_Options.hasSunOverride)
-    LightManager::getInstance().setSun(m_Options.sunAzimuth,
-                                       m_Options.sunElevation);
-  LightManager::getInstance().setLocalLightsEnabled(!m_Options.sunOnly);
+  m_Renderer->getSettings().localLightsEnabled = !m_Options.sunOnly;
   m_Renderer->getSettings().showCascades = m_Options.showCascades;
 
   // After our callbacks are installed: the ImGui backend chains to them
@@ -112,6 +115,13 @@ void Application::Initialize() {
   else
     SetupModelScene(m_Options.modelPath, m_Options.modelScale,
                     m_Options.modelImport);
+
+  if (m_Options.hasSunOverride) {
+    auto *sun = FindSun();
+    sun->azimuth = m_Options.sunAzimuth;
+    sun->elevation =
+        glm::clamp(m_Options.sunElevation, kMinSunElevation, kMaxSunElevation);
+  }
 
   if (m_Options.hasCameraOverride)
     m_Camera = Camera(m_Options.cameraPosition, glm::vec3(0.0f, 1.0f, 0.0f),
@@ -132,9 +142,8 @@ void Application::Run() {
     UpdateWindowTitle();
     m_Scene.onUpdate(m_DeltaTime);
 
-    m_DebugUI->build({m_Renderer->getSettings(), m_Camera, m_DeltaTime,
-                      m_Renderer->getLastDrawCount(), m_CameraMode,
-                      m_ScreenshotRequested});
+    m_DebugUI->build({m_Renderer->getSettings(), m_Renderer->getStats(),
+                      m_Scene, m_Camera, m_CameraMode, m_ScreenshotRequested});
 
     // Nothing to draw into while the window is minimized
     if (m_Width > 0 && m_Height > 0) {
@@ -167,15 +176,25 @@ void Application::ProcessInput() {
 
   m_InputHandler.processInput(m_Window, m_Camera, m_DeltaTime);
 
-  auto &lights = LightManager::getInstance();
+  DirectionalLight *sun = FindSun();
+  if (!sun)
+    return;
+
+  const float step = kSunRotationSpeed * m_DeltaTime;
   if (glfwGetKey(m_Window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    lights.rotateSun(kSunRotationSpeed * m_DeltaTime);
+    sun->azimuth = std::fmod(sun->azimuth + step, 360.0f);
   if (glfwGetKey(m_Window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    lights.rotateSun(-kSunRotationSpeed * m_DeltaTime);
+    sun->azimuth = std::fmod(sun->azimuth - step + 360.0f, 360.0f);
   if (glfwGetKey(m_Window, GLFW_KEY_UP) == GLFW_PRESS)
-    lights.tiltSun(kSunRotationSpeed * m_DeltaTime);
+    sun->elevation = std::min(sun->elevation + step, kMaxSunElevation);
   if (glfwGetKey(m_Window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    lights.tiltSun(-kSunRotationSpeed * m_DeltaTime);
+    sun->elevation = std::max(sun->elevation - step, kMinSunElevation);
+}
+
+DirectionalLight *Application::FindSun() {
+  for (const auto entity : m_Scene.getAll<DirectionalLight>())
+    return &m_Scene.getRegistry().get<DirectionalLight>(entity);
+  return nullptr;
 }
 
 void Application::UpdateWindowTitle() {
@@ -186,12 +205,16 @@ void Application::UpdateWindowTitle() {
   if (m_TitleTimer < 0.25f)
     return;
 
-  const auto &lights = LightManager::getInstance();
   char title[256];
-  std::snprintf(title, sizeof(title),
-                "%s | %.0f fps | sun azimuth %.0f, elevation %.0f",
-                m_Title.c_str(), m_TitleFrames / m_TitleTimer,
-                lights.getSunAzimuth(), lights.getSunElevation());
+  const DirectionalLight *sun = FindSun();
+  if (sun)
+    std::snprintf(title, sizeof(title),
+                  "%s | %.0f fps | sun azimuth %.0f, elevation %.0f",
+                  m_Title.c_str(), m_TitleFrames / m_TitleTimer, sun->azimuth,
+                  sun->elevation);
+  else
+    std::snprintf(title, sizeof(title), "%s | %.0f fps", m_Title.c_str(),
+                  m_TitleFrames / m_TitleTimer);
   glfwSetWindowTitle(m_Window, title);
   m_TitleTimer = 0.0f;
   m_TitleFrames = 0;
@@ -280,11 +303,9 @@ void Application::KeyCallback(GLFWwindow *window, const int key,
   case GLFW_KEY_C:
     settings.showCascades = !settings.showCascades;
     break;
-  case GLFW_KEY_L: {
-    auto &lights = LightManager::getInstance();
-    lights.setLocalLightsEnabled(!lights.areLocalLightsEnabled());
+  case GLFW_KEY_L:
+    settings.localLightsEnabled = !settings.localLightsEnabled;
     break;
-  }
   case GLFW_KEY_F12:
     app->m_ScreenshotRequested = true;
     break;
@@ -321,6 +342,8 @@ void Application::SetupShadowTestScene() {
                                     backpackImport);
 
   CreateGroundPlane(100.0f);
+  CreateSun();
+  CreateTestLights();
 
   m_Camera = Camera({0.0f, 2.0f, 7.0f}, {0.0f, 1.0f, 0.0f}, -90.0f, -12.0f);
 }
@@ -330,6 +353,7 @@ void Application::SetupModelScene(const std::string &path, const float scale,
   Transform transform;
   transform.scale = glm::vec3(scale);
   ResourceManager::instantiateModel(m_Scene, path, transform, import);
+  CreateSun();
 
   // Look at the model from its front (+Z side), slightly from above
   const auto model = ResourceManager::loadModel(path, import);
@@ -355,6 +379,40 @@ void Application::CreateGroundPlane(const float halfSize) {
   ground.addComponent<Transform>(transform);
   ground.addComponent<MeshRenderer>(
       Primitives::createPlane(halfSize, halfSize / 2.0f), material);
+}
+
+void Application::CreateSun() {
+  Entity sun = m_Scene.createEntity("Sun");
+  sun.addComponent<DirectionalLight>();
+}
+
+void Application::CreateTestLights() {
+  // Spread over the test scene, slightly tinted to tell them apart
+  const glm::vec3 positions[] = {{1.5f, 0.3f, 1.5f},
+                                 {-2.5f, 0.5f, -3.0f},
+                                 {2.5f, 1.0f, -9.0f},
+                                 {-1.5f, 1.5f, -20.0f}};
+  const glm::vec3 colors[] = {{1.0f, 0.75f, 0.5f},
+                              {0.5f, 0.7f, 1.0f},
+                              {0.6f, 1.0f, 0.6f},
+                              {1.0f, 1.0f, 1.0f}};
+  for (size_t i = 0; i < std::size(positions); ++i) {
+    Entity light = m_Scene.createEntity("Point light " + std::to_string(i));
+    Transform transform;
+    transform.position = positions[i];
+    light.addComponent<Transform>(transform);
+    PointLight point;
+    point.color = colors[i];
+    light.addComponent<PointLight>(point);
+  }
+
+  // Above and behind the camera, aimed down at the front row
+  Entity spot = m_Scene.createEntity("Spot light");
+  Transform transform;
+  transform.position = {0.0f, 3.0f, 5.0f};
+  transform.rotation.x = glm::radians(-31.0f);
+  spot.addComponent<Transform>(transform);
+  spot.addComponent<SpotLight>();
 }
 
 void Application::SetCameraMode(const bool enabled) {

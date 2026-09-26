@@ -1,29 +1,29 @@
-#version 330 core
-#define MAX_CASCADES 8
+#version 450 core
+#include "common/shadows.glsl"
 
-layout (triangles) in;
-layout (triangle_strip, max_vertices = 24) out; // 3 * MAX_CASCADES
+// One invocation per cascade (geometry shader instancing), each writing the
+// triangle into its own layer of the shadow map array.
+layout (triangles, invocations = CASCADE_COUNT) in;
+layout (triangle_strip, max_vertices = 3) out;
 
 in vec2 vTexCoords[];
 out vec2 gTexCoords;
 
-uniform mat4 uLightSpaceMatrices[MAX_CASCADES];
-uniform int uCascadeCount;
+// Bit i is set when the mesh overlaps cascade i (CPU culling)
+uniform uint uCascadeMask;
 
-// Broadcasts each triangle to every cascade of the layered framebuffer.
 void main()
 {
-    for (int layer = 0; layer < uCascadeCount; ++layer)
+    int layer = gl_InvocationID;
+    if ((uCascadeMask & (1u << layer)) == 0u)
+        return;
+
+    for (int i = 0; i < 3; ++i)
     {
-        for (int i = 0; i < 3; ++i)
-        {
-            // Outputs are undefined after EmitVertex, so gl_Layer is written
-            // for every vertex.
-            gl_Layer = layer;
-            gTexCoords = vTexCoords[i];
-            gl_Position = uLightSpaceMatrices[layer] * gl_in[i].gl_Position;
-            EmitVertex();
-        }
-        EndPrimitive();
+        gl_Layer = layer;
+        gTexCoords = vTexCoords[i];
+        gl_Position = shadows.lightSpaceMatrices[layer] * gl_in[i].gl_Position;
+        EmitVertex();
     }
+    EndPrimitive();
 }

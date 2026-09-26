@@ -3,9 +3,10 @@
 #include <GLFW/glfw3.h>
 
 VertexBuffer::VertexBuffer(const void *data, const GLsizeiptr size) {
-  glGenBuffers(1, &mRendererId);
-  glBindBuffer(GL_ARRAY_BUFFER, mRendererId);
-  glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW);
+  glCreateBuffers(1, &mRendererId);
+  // Immutable storage: the size can never change, the driver can place it
+  // optimally since no flag allows CPU access afterwards
+  glNamedBufferStorage(mRendererId, size, data, 0);
 }
 
 VertexBuffer::~VertexBuffer() { clean(); }
@@ -30,7 +31,3 @@ VertexBuffer &VertexBuffer::operator=(VertexBuffer &&other) noexcept {
   }
   return *this;
 }
-
-void VertexBuffer::bind() const { glBindBuffer(GL_ARRAY_BUFFER, mRendererId); }
-
-void VertexBuffer::unbind() { glBindBuffer(GL_ARRAY_BUFFER, 0); }

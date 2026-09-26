@@ -2,10 +2,10 @@
 #include "../gl/IndexBuffer.h"
 #include "../gl/VertexArray.h"
 #include "../gl/VertexBuffer.h"
+#include "Frustum.h"
 
 #include <glm.hpp>
 
-#include <memory>
 #include <vector>
 
 /// Interleaved vertex format shared by every mesh (locations 0 to 4).
@@ -32,12 +32,14 @@ public:
   /// Issues the indexed draw call. The caller binds the shader beforehand.
   void draw() const;
 
-  [[nodiscard]] GLsizei getIndexCount() const { return mIBO->getCount(); }
+  [[nodiscard]] GLsizei getIndexCount() const { return mIBO.getCount(); }
+
+  /// Bounds in model space, used for culling.
+  [[nodiscard]] const AABB &getBounds() const { return mBounds; }
 
 private:
-  // Created in the constructor body: the index buffer must be bound while
-  // this mesh's VAO is bound, otherwise it ends up in another VAO's state.
-  std::unique_ptr<VertexArray> mVAO;
-  std::unique_ptr<VertexBuffer> mVBO;
-  std::unique_ptr<IndexBuffer> mIBO;
+  VertexBuffer mVBO;
+  IndexBuffer mIBO;
+  VertexArray mVAO;
+  AABB mBounds;
 };

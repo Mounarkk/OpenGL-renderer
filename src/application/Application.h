@@ -81,6 +81,11 @@ private:
   void SetupModelScene(const std::string &path, float scale,
                        const ModelImportOptions &import);
   void CreateGroundPlane(float halfSize);
+  void CreateSun();
+  void CreateTestLights();
+
+  /// The directional light driven by the arrow keys, null if there is none.
+  DirectionalLight *FindSun();
 
   /// Camera mode: hidden cursor driving the camera. Otherwise the cursor is
   /// free and interacts with the debug panel.

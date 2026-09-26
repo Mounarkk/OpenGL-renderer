@@ -2,6 +2,8 @@
 #include <glm.hpp>
 #include <gtc/matrix_transform.hpp>
 
+#include <cmath>
+
 #include <memory>
 #include <string>
 
@@ -61,4 +63,44 @@ private:
 struct MeshRenderer {
   std::shared_ptr<Mesh> mesh;
   std::shared_ptr<Material> material;
+};
+
+/**
+ * Light coming from infinitely far away in one direction, like the sun.
+ * Only the first one found in the scene is used, and it casts the cascaded
+ * shadows. Its direction comes from two angles rather than from a Transform
+ * so that it can be driven like a sun in the sky.
+ */
+struct DirectionalLight {
+  float azimuth = 56.0f;   ///< Degrees, 0 towards +X, 90 towards +Z
+  float elevation = 70.0f; ///< Degrees above the horizon
+  glm::vec3 color{1.0f};
+  float intensity = 0.8f;
+  glm::vec3 ambient{0.05f}; ///< Ambient light of the whole scene
+
+  /// Direction the light travels in, from the sky towards the ground.
+  [[nodiscard]] glm::vec3 getDirection() const {
+    const float a = glm::radians(azimuth);
+    const float e = glm::radians(elevation);
+    return -glm::vec3(std::cos(e) * std::cos(a), std::sin(e),
+                      std::cos(e) * std::sin(a));
+  }
+};
+
+/// Omni light at the entity position. Its influence fades smoothly to zero at
+/// `range`, so it can be culled beyond it.
+struct PointLight {
+  glm::vec3 color{1.0f};
+  float intensity = 4.0f;
+  float range = 8.0f;
+};
+
+/// Cone light at the entity position, shining along its local -Z axis
+/// (Transform::getForward).
+struct SpotLight {
+  glm::vec3 color{1.0f};
+  float intensity = 8.0f;
+  float range = 15.0f;
+  float innerAngle = 12.5f; ///< Degrees, full intensity inside
+  float outerAngle = 17.5f; ///< Degrees, no light outside
 };

@@ -4,7 +4,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include <utility>
+#include <string>
 
 namespace {
 constexpr float kBorderColor[] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -20,13 +20,20 @@ const char *typeName(const FrameBufferType type) {
   }
   return "Unknown";
 }
+
+void setDepthSampling(const GLuint texture) {
+  glTextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTextureParameterfv(texture, GL_TEXTURE_BORDER_COLOR, kBorderColor);
+}
 } // namespace
 
 FrameBuffer::FrameBuffer(const int width, const int height,
                          const FrameBufferType type, const int layers)
     : mWidth(width), mHeight(height), mLayers(layers), mType(type) {
-  glGenFramebuffers(1, &mRendererID);
-  glBindFramebuffer(GL_FRAMEBUFFER, mRendererID);
+  glCreateFramebuffers(1, &mRendererID);
 
   switch (mType) {
   case FrameBufferType::Color:
@@ -40,9 +47,8 @@ FrameBuffer::FrameBuffer(const int width, const int height,
     break;
   }
 
-  const GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+  const GLenum status =
+      glCheckNamedFramebufferStatus(mRendererID, GL_FRAMEBUFFER);
   if (status != GL_FRAMEBUFFER_COMPLETE) {
     clean();
     throw RendererException(std::string("Incomplete ") + typeName(type) +
@@ -108,60 +114,44 @@ void FrameBuffer::bind() const {
 void FrameBuffer::unbind() { glBindFramebuffer(GL_FRAMEBUFFER, 0); }
 
 void FrameBuffer::createColorAttachments() {
-  glGenTextures(1, &mColorTextureID);
-  glBindTexture(GL_TEXTURE_2D, mColorTextureID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, mWidth, mHeight, 0, GL_RGBA,
-               GL_FLOAT, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                         mColorTextureID, 0);
+  glCreateTextures(GL_TEXTURE_2D, 1, &mColorTextureID);
+  glTextureStorage2D(mColorTextureID, 1, GL_RGBA16F, mWidth, mHeight);
+  glTextureParameteri(mColorTextureID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTextureParameteri(mColorTextureID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTextureParameteri(mColorTextureID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(mColorTextureID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glNamedFramebufferTexture(mRendererID, GL_COLOR_ATTACHMENT0, mColorTextureID,
+                            0);
 
-  glGenRenderbuffers(1, &mDepthRboID);
-  glBindRenderbuffer(GL_RENDERBUFFER, mDepthRboID);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, mWidth, mHeight);
-  glBindRenderbuffer(GL_RENDERBUFFER, 0);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
-                            GL_RENDERBUFFER, mDepthRboID);
+  glCreateRenderbuffers(1, &mDepthRboID);
+  glNamedRenderbufferStorage(mDepthRboID, GL_DEPTH24_STENCIL8, mWidth, mHeight);
+  glNamedFramebufferRenderbuffer(mRendererID, GL_DEPTH_STENCIL_ATTACHMENT,
+                                 GL_RENDERBUFFER, mDepthRboID);
 }
 
 void FrameBuffer::createShadowMapAttachments() {
-  glGenTextures(1, &mDepthTextureID);
-  glBindTexture(GL_TEXTURE_2D, mDepthTextureID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, mWidth, mHeight, 0,
-               GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, kBorderColor);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
-                         mDepthTextureID, 0);
+  glCreateTextures(GL_TEXTURE_2D, 1, &mDepthTextureID);
+  glTextureStorage2D(mDepthTextureID, 1, GL_DEPTH_COMPONENT32F, mWidth,
+                     mHeight);
+  setDepthSampling(mDepthTextureID);
+  glNamedFramebufferTexture(mRendererID, GL_DEPTH_ATTACHMENT, mDepthTextureID,
+                            0);
 
-  glDrawBuffer(GL_NONE);
-  glReadBuffer(GL_NONE);
+  glNamedFramebufferDrawBuffer(mRendererID, GL_NONE);
+  glNamedFramebufferReadBuffer(mRendererID, GL_NONE);
 }
 
 void FrameBuffer::createCascadedShadowMapAttachments() {
-  glGenTextures(1, &mDepthTextureID);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, mDepthTextureID);
-  glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_DEPTH_COMPONENT32F, mWidth, mHeight,
-               mLayers, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  glTexParameterfv(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_BORDER_COLOR, kBorderColor);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+  glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &mDepthTextureID);
+  glTextureStorage3D(mDepthTextureID, 1, GL_DEPTH_COMPONENT32F, mWidth, mHeight,
+                     mLayers);
+  setDepthSampling(mDepthTextureID);
 
   // Attaching the whole array makes the framebuffer layered: the geometry
   // shader picks the destination layer through gl_Layer.
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, mDepthTextureID, 0);
+  glNamedFramebufferTexture(mRendererID, GL_DEPTH_ATTACHMENT, mDepthTextureID,
+                            0);
 
-  glDrawBuffer(GL_NONE);
-  glReadBuffer(GL_NONE);
+  glNamedFramebufferDrawBuffer(mRendererID, GL_NONE);
+  glNamedFramebufferReadBuffer(mRendererID, GL_NONE);
 }

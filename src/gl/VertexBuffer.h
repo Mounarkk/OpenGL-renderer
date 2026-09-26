@@ -1,14 +1,11 @@
 #pragma once
 #include <glad/glad.h>
 
-/// Immutable GL_ARRAY_BUFFER holding interleaved vertex data. Move-only.
+/// Immutable GPU buffer holding interleaved vertex data. Move-only.
 class VertexBuffer {
 public:
-  /**
-   * Uploads the data with GL_STATIC_DRAW.
-   * @param data Pointer to the vertex data
-   * @param size Size of the data in bytes
-   */
+  /// @param data Vertex data to upload
+  /// @param size Size of the data in bytes
   VertexBuffer(const void *data, GLsizeiptr size);
   ~VertexBuffer();
 
@@ -20,8 +17,7 @@ public:
   /// Deletes the GL buffer. Safe to call several times.
   void clean();
 
-  void bind() const;
-  static void unbind();
+  [[nodiscard]] GLuint getID() const { return mRendererId; }
 
 private:
   GLuint mRendererId = 0;
