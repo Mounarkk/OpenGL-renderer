@@ -97,7 +97,7 @@ void DebugUI::buildSunSection(Scene &scene) {
   ImGui::SliderFloat("Azimuth", &sun.azimuth, 0.0f, 360.0f, "%.0f deg");
   ImGui::SliderFloat("Elevation", &sun.elevation, 2.0f, 89.0f, "%.0f deg");
   ImGui::ColorEdit3("Color##sun", &sun.color.x);
-  ImGui::SliderFloat("Intensity##sun", &sun.intensity, 0.0f, 5.0f);
+  ImGui::SliderFloat("Intensity##sun", &sun.intensity, 0.0f, 10.0f);
   ImGui::ColorEdit3("Ambient", &sun.ambient.x);
 }
 
@@ -140,7 +140,7 @@ void DebugUI::buildLocalLightSection(const DebugUIContext &context) {
     if (ImGui::TreeNode(tag.name.c_str())) {
       ImGui::DragFloat3("Position", &transform.position.x, 0.05f);
       ImGui::ColorEdit3("Color", &light.color.x);
-      ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 50.0f);
+      ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 100.0f);
       ImGui::SliderFloat("Range", &light.range, 0.1f, 50.0f);
       if (ImGui::Button("Remove"))
         toDestroy.push_back(entity);
@@ -161,7 +161,7 @@ void DebugUI::buildLocalLightSection(const DebugUIContext &context) {
         transform.rotation.y = glm::radians(angles.y);
       }
       ImGui::ColorEdit3("Color", &light.color.x);
-      ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 50.0f);
+      ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 100.0f);
       ImGui::SliderFloat("Range", &light.range, 0.1f, 50.0f);
       ImGui::SliderFloat("Inner angle", &light.innerAngle, 1.0f,
                          light.outerAngle, "%.1f deg");

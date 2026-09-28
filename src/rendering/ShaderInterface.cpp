@@ -15,6 +15,9 @@ std::string defines() {
       << "#define NORMAL_UNIT " << kNormalUnit << "\n"
       << "#define SKYBOX_UNIT " << kSkyboxUnit << "\n"
       << "#define SCREEN_UNIT " << kScreenUnit << "\n"
+      << "#define METALLIC_ROUGHNESS_UNIT " << kMetallicRoughnessUnit << "\n"
+      << "#define OCCLUSION_UNIT " << kOcclusionUnit << "\n"
+      << "#define EMISSIVE_UNIT " << kEmissiveUnit << "\n"
       << "#define CASCADE_COUNT " << kCascadeCount << "\n"
       << "#define MAX_POINT_LIGHTS " << kMaxPointLights << "\n"
       << "#define MAX_SPOT_LIGHTS " << kMaxSpotLights << "\n";

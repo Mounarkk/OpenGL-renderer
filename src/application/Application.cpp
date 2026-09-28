@@ -370,7 +370,7 @@ void Application::SetupModelScene(const std::string &path, const float scale,
 void Application::CreateGroundPlane(const float halfSize) {
   auto material = std::make_shared<Material>();
   material->setAlbedo(glm::vec3(0.25f));
-  material->setSpecular(glm::vec3(0.05f));
+  material->setRoughness(0.9f);
 
   Transform transform;
   transform.position.y = -1.0f;

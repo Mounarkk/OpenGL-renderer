@@ -8,6 +8,7 @@
 #include <assimp/material.h>
 
 #include <algorithm>
+#include <cmath>
 
 std::unordered_map<std::string, std::weak_ptr<Texture>>
     ResourceManager::sTextureCache;
@@ -83,10 +84,6 @@ ResourceManager::loadMaterial(const aiMaterial &source,
                                               directory, true))
     material->setTexture(TextureType::Albedo, diffuse);
 
-  if (auto specular =
-          loadMaterialTexture(source, aiTextureType_SPECULAR, directory, false))
-    material->setTexture(TextureType::Specular, specular);
-
   // glTF and FBX use NORMALS. The OBJ importer maps map_Bump/bump to HEIGHT,
   // which some files use for real normal maps and others for grayscale bump
   // maps: only multi-channel images are treated as normal maps.
@@ -101,22 +98,37 @@ ResourceManager::loadMaterial(const aiMaterial &source,
   if (normal)
     material->setTexture(TextureType::Normal, normal);
 
+  convertPhongParameters(source, directory, *material);
+  return material;
+}
+
+void ResourceManager::convertPhongParameters(const aiMaterial &source,
+                                             const std::string &directory,
+                                             Material &material) {
   // Color factors only apply when there is no map, as OBJ exporters write
   // arbitrary Kd values next to map_Kd.
   aiColor3D color;
-  if (!material->hasTexture(TextureType::Albedo) &&
+  if (!material.hasTexture(TextureType::Albedo) &&
       source.Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS)
-    material->setAlbedo({color.r, color.g, color.b});
-  if (!material->hasTexture(TextureType::Specular) &&
-      source.Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS)
-    material->setSpecular({color.r, color.g, color.b});
+    material.setAlbedo(glm::vec3(color.r, color.g, color.b));
 
+  // A Phong specular map or color becomes the reflectance of the dielectric
+  if (auto specular = loadMaterialTexture(source, aiTextureType_SPECULAR,
+                                          directory, false)) {
+    material.setTexture(TextureType::Specular, specular);
+    material.setSpecular(1.0f);
+  } else if (source.Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS) {
+    material.setSpecular(std::max({color.r, color.g, color.b}));
+  }
+
+  // Roughness giving about the same highlight size as the Blinn-Phong
+  // exponent (Walter et al. 2007). Clamped because exporters often write very
+  // high exponents that would turn everything into a mirror.
   float shininess = 0.0f;
   if (source.Get(AI_MATKEY_SHININESS, shininess) == AI_SUCCESS &&
       shininess > 0.0f)
-    material->setShininess(shininess);
-
-  return material;
+    material.setRoughness(
+        std::clamp(std::sqrt(2.0f / (shininess + 2.0f)), 0.2f, 1.0f));
 }
 
 std::shared_ptr<Model>

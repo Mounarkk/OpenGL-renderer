@@ -1,5 +1,7 @@
 #include "Material.h"
 
+using namespace ShaderInterface;
+
 namespace {
 std::shared_ptr<Texture> &whiteTexture() {
   static std::shared_ptr<Texture> texture;
@@ -24,45 +26,40 @@ void bindMap(const std::shared_ptr<Texture> &map,
 
 void Material::bind(const Shader &shader) const {
   // The samplers declare these units with layout(binding), nothing to set
-  bindMap(mAlbedoMap, whiteTexture(), ShaderInterface::kAlbedoUnit);
-  bindMap(mSpecularMap, whiteTexture(), ShaderInterface::kSpecularUnit);
-  bindMap(mNormalMap, flatNormalTexture(), ShaderInterface::kNormalUnit);
+  bindMap(map(TextureType::Albedo), whiteTexture(), kAlbedoUnit);
+  bindMap(map(TextureType::Normal), flatNormalTexture(), kNormalUnit);
+  bindMap(map(TextureType::MetallicRoughness), whiteTexture(),
+          kMetallicRoughnessUnit);
+  bindMap(map(TextureType::Occlusion), whiteTexture(), kOcclusionUnit);
+  bindMap(map(TextureType::Emissive), whiteTexture(), kEmissiveUnit);
+  bindMap(map(TextureType::Specular), whiteTexture(), kSpecularUnit);
 
-  shader.setVec3("uMaterial.albedo", mAlbedo);
-  shader.setVec3("uMaterial.specular", mSpecular);
-  shader.setFloat("uMaterial.shininess", mShininess);
-  shader.setBool("uMaterial.hasNormalMap", mNormalMap != nullptr);
+  shader.setVec4("uMaterial.albedo", mAlbedo);
+  shader.setFloat("uMaterial.metallic", mMetallic);
+  shader.setFloat("uMaterial.roughness", mRoughness);
+  shader.setFloat("uMaterial.specular", mSpecular);
+  shader.setVec3("uMaterial.emissive", mEmissive);
+  shader.setFloat("uMaterial.alphaCutoff", alphaCutoff());
+  shader.setBool("uMaterial.hasNormalMap", hasTexture(TextureType::Normal));
 }
 
-void Material::bindAlbedo() const {
-  bindMap(mAlbedoMap, whiteTexture(), ShaderInterface::kAlbedoUnit);
+void Material::bindAlbedo(const Shader &shader) const {
+  bindMap(map(TextureType::Albedo), whiteTexture(), kAlbedoUnit);
+  shader.setFloat("uAlphaCutoff", alphaCutoff());
+}
+
+void Material::setAlphaMode(const AlphaMode mode, const float cutoff) {
+  mAlphaMode = mode;
+  mAlphaCutoff = cutoff;
 }
 
 void Material::setTexture(const TextureType type,
                           const std::shared_ptr<Texture> &texture) {
-  switch (type) {
-  case TextureType::Albedo:
-    mAlbedoMap = texture;
-    break;
-  case TextureType::Specular:
-    mSpecularMap = texture;
-    break;
-  case TextureType::Normal:
-    mNormalMap = texture;
-    break;
-  }
+  mMaps[static_cast<size_t>(type)] = texture;
 }
 
 bool Material::hasTexture(const TextureType type) const {
-  switch (type) {
-  case TextureType::Albedo:
-    return mAlbedoMap != nullptr;
-  case TextureType::Specular:
-    return mSpecularMap != nullptr;
-  case TextureType::Normal:
-    return mNormalMap != nullptr;
-  }
-  return false;
+  return map(type) != nullptr;
 }
 
 void Material::releaseDefaultTextures() {

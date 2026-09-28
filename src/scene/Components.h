@@ -75,8 +75,8 @@ struct DirectionalLight {
   float azimuth = 56.0f;   ///< Degrees, 0 towards +X, 90 towards +Z
   float elevation = 70.0f; ///< Degrees above the horizon
   glm::vec3 color{1.0f};
-  float intensity = 0.8f;
-  glm::vec3 ambient{0.05f}; ///< Ambient light of the whole scene
+  float intensity = 3.0f;
+  glm::vec3 ambient{0.08f}; ///< Ambient light of the whole scene
 
   /// Direction the light travels in, from the sky towards the ground.
   [[nodiscard]] glm::vec3 getDirection() const {
@@ -91,7 +91,7 @@ struct DirectionalLight {
 /// `range`, so it can be culled beyond it.
 struct PointLight {
   glm::vec3 color{1.0f};
-  float intensity = 4.0f;
+  float intensity = 12.0f;
   float range = 8.0f;
 };
 
@@ -99,7 +99,7 @@ struct PointLight {
 /// (Transform::getForward).
 struct SpotLight {
   glm::vec3 color{1.0f};
-  float intensity = 8.0f;
+  float intensity = 25.0f;
   float range = 15.0f;
   float innerAngle = 12.5f; ///< Degrees, full intensity inside
   float outerAngle = 17.5f; ///< Degrees, no light outside

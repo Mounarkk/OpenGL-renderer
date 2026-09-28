@@ -65,6 +65,12 @@ private:
   static std::unordered_map<std::string, std::weak_ptr<Shader>> sShaderCache;
   static std::unordered_map<std::string, std::shared_ptr<Model>> sModelCache;
 
+  /// Fills the metallic-roughness parameters from the Phong ones of formats
+  /// such as OBJ (Kd, Ks, Ns, specular map).
+  static void convertPhongParameters(const aiMaterial &source,
+                                     const std::string &directory,
+                                     Material &material);
+
   static std::shared_ptr<Texture>
   loadMaterialTexture(const aiMaterial &material, aiTextureType type,
                       const std::string &directory, bool sRGB);

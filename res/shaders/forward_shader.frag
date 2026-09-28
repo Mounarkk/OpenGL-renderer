@@ -2,6 +2,7 @@
 #include "common/frame.glsl"
 #include "common/lights.glsl"
 #include "common/shadows.glsl"
+#include "common/brdf.glsl"
 
 out vec4 FragColor;
 
@@ -15,36 +16,26 @@ in VS_OUT {
 
 layout (binding = SHADOW_MAP_UNIT) uniform sampler2DArray uShadowMap;
 layout (binding = ALBEDO_UNIT) uniform sampler2D uAlbedoMap;
-layout (binding = SPECULAR_UNIT) uniform sampler2D uSpecularMap;
 layout (binding = NORMAL_UNIT) uniform sampler2D uNormalMap;
+layout (binding = METALLIC_ROUGHNESS_UNIT) uniform sampler2D uMetallicRoughnessMap;
+layout (binding = OCCLUSION_UNIT) uniform sampler2D uOcclusionMap;
+layout (binding = EMISSIVE_UNIT) uniform sampler2D uEmissiveMap;
+layout (binding = SPECULAR_UNIT) uniform sampler2D uSpecularMap;
 
-// Per material factors, set by Material::bind
+// Per material factors, multiplied with the maps. Set by Material::bind.
 struct Material {
-    vec3 albedo;
-    vec3 specular;
-    float shininess;
+    vec4 albedo;
+    float metallic;
+    float roughness;
+    float specular;     // dielectric reflectance, F0 = 0.08 * specular
+    vec3 emissive;
+    float alphaCutoff;  // negative for opaque materials
     bool hasNormalMap;
 };
 uniform Material uMaterial;
 
-// Surface values shared by every light
-struct Surface {
-    vec3 position;
-    vec3 normal;
-    vec3 albedo;
-    vec3 specular;
-};
-
 // Slope part of the depth bias stops growing past this tangent
 const float SHADOW_BIAS_MAX_SLOPE = 10.0;
-
-vec3 blinnPhong(Surface s, vec3 lightDir, vec3 viewDir, vec3 radiance)
-{
-    float diff = max(dot(s.normal, lightDir), 0.0);
-    vec3 halfway = normalize(lightDir + viewDir);
-    float spec = diff > 0.0 ? pow(max(dot(s.normal, halfway), 0.0), uMaterial.shininess) : 0.0;
-    return (s.albedo * diff + s.specular * spec) * radiance;
-}
 
 vec3 pointLightContribution(PointLight light, Surface s, vec3 viewDir)
 {
@@ -53,7 +44,7 @@ vec3 pointLightContribution(PointLight light, Surface s, vec3 viewDir)
     float attenuation = rangeAttenuation(distance, light.positionRange.w);
     if (attenuation <= 0.0)
         return vec3(0.0);
-    return blinnPhong(s, toLight / distance, viewDir, light.radiance.rgb) * attenuation;
+    return shadeSurface(s, toLight / distance, viewDir, light.radiance.rgb * attenuation);
 }
 
 vec3 spotLightContribution(SpotLight light, Surface s, vec3 viewDir)
@@ -70,7 +61,19 @@ vec3 spotLightContribution(SpotLight light, Surface s, vec3 viewDir)
     float attenuation = cone * rangeAttenuation(distance, light.positionRange.w);
     if (attenuation <= 0.0)
         return vec3(0.0);
-    return blinnPhong(s, lightDir, viewDir, light.radianceInnerCos.rgb) * attenuation;
+    return shadeSurface(s, lightDir, viewDir, light.radianceInnerCos.rgb * attenuation);
+}
+
+// Stand-in for image based lighting: a hemisphere light, the sky ambient
+// from above fading to a darker ground bounce from below, so that surfaces
+// the sun does not reach keep their shape. The f0 term keeps metals from
+// turning black.
+const float GROUND_AMBIENT_RATIO = 0.3;
+
+vec3 ambientLight(Surface s)
+{
+    float skyFactor = mix(GROUND_AMBIENT_RATIO, 1.0, s.normal.y * 0.5 + 0.5);
+    return (s.diffuseColor + s.f0) * lights.sun.ambient.rgb * skyFactor * s.occlusion;
 }
 
 int selectCascade(vec3 worldPos)
@@ -137,9 +140,16 @@ vec3 cascadeTint(int layer)
 
 void main()
 {
-    vec4 albedoSample = texture(uAlbedoMap, fs_in.texCoords);
-    if (albedoSample.a < 0.5)
+    vec2 uv = fs_in.texCoords;
+    vec4 albedo = texture(uAlbedoMap, uv) * uMaterial.albedo;
+    if (albedo.a < uMaterial.alphaCutoff)
         discard;
+
+    // glTF packing: roughness in G, metallic in B
+    vec4 metallicRoughness = texture(uMetallicRoughnessMap, uv);
+    float metallic = clamp(metallicRoughness.b * uMaterial.metallic, 0.0, 1.0);
+    float roughness = clamp(metallicRoughness.g * uMaterial.roughness, 0.0, 1.0);
+    float specular = texture(uSpecularMap, uv).r * uMaterial.specular;
 
     // Two sided lighting: back faces use the flipped normal
     float side = gl_FrontFacing ? 1.0 : -1.0;
@@ -147,9 +157,12 @@ void main()
 
     Surface s;
     s.position = fs_in.fragPos;
-    s.albedo = albedoSample.rgb * uMaterial.albedo;
-    s.specular = texture(uSpecularMap, fs_in.texCoords).rgb * uMaterial.specular;
     s.normal = geometryNormal;
+    s.roughness = roughness;
+    s.occlusion = texture(uOcclusionMap, uv).r;
+    // Metals have no diffuse and tint their reflection with the albedo
+    s.diffuseColor = albedo.rgb * (1.0 - metallic);
+    s.f0 = mix(vec3(0.08 * specular), albedo.rgb, metallic);
 
     if (uMaterial.hasNormalMap)
     {
@@ -160,7 +173,7 @@ void main()
         {
             T = normalize(T);
             vec3 B = normalize(cross(geometryNormal, T)) * sign(dot(cross(geometryNormal, T), fs_in.bitangent));
-            vec3 mapped = texture(uNormalMap, fs_in.texCoords).rgb * 2.0 - 1.0;
+            vec3 mapped = texture(uNormalMap, uv).rgb * 2.0 - 1.0;
             s.normal = normalize(mat3(T, B, geometryNormal) * mapped);
         }
     }
@@ -173,13 +186,15 @@ void main()
     {
         float shadow = sunShadow(s.position, geometryNormal, layer);
         vec3 sunDir = -normalize(lights.sun.direction.xyz);
-        result += s.albedo * lights.sun.ambient.rgb;
-        result += (1.0 - shadow) * blinnPhong(s, sunDir, viewDir, lights.sun.radiance.rgb);
+        result += ambientLight(s);
+        result += (1.0 - shadow) * shadeSurface(s, sunDir, viewDir, lights.sun.radiance.rgb);
     }
     for (int i = 0; i < lights.counts.x; ++i)
         result += pointLightContribution(lights.pointLights[i], s, viewDir);
     for (int i = 0; i < lights.counts.y; ++i)
         result += spotLightContribution(lights.spotLights[i], s, viewDir);
+
+    result += texture(uEmissiveMap, uv).rgb * uMaterial.emissive;
 
     if (shadows.flags.z != 0 && shadows.flags.x != 0)
         result *= cascadeTint(layer);

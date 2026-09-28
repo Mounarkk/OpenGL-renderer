@@ -28,6 +28,9 @@ constexpr GLuint kSpecularUnit = 2;
 constexpr GLuint kNormalUnit = 3;
 constexpr GLuint kSkyboxUnit = 4;
 constexpr GLuint kScreenUnit = 5;
+constexpr GLuint kMetallicRoughnessUnit = 6;
+constexpr GLuint kOcclusionUnit = 7;
+constexpr GLuint kEmissiveUnit = 8;
 
 // Array sizes
 constexpr int kCascadeCount = 4;

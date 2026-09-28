@@ -169,7 +169,7 @@ void ShadowMappingPass::execute(const std::vector<RenderCommand> &commands,
     }
 
     // Alpha tested materials (foliage, fences, nets) cut their shadows too
-    command.material->bindAlbedo();
+    command.material->bindAlbedo(*mShader);
     mShader->setMat4("uModel", command.model);
     mShader->setUInt("uCascadeMask", mask);
     command.mesh->draw();
