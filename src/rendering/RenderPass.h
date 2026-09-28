@@ -130,8 +130,8 @@ private:
   void drawLightGizmos(const FrameContext &frame) const;
 };
 
-/// Draws a texture on a fullscreen quad of the default framebuffer, applying
-/// gamma correction.
+/// Draws the HDR color target on a fullscreen quad of the default
+/// framebuffer: exposure, tone mapping, then gamma correction.
 class PostProcessingPass final : public RenderPass {
 public:
   PostProcessingPass();

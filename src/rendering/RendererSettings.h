@@ -17,6 +17,11 @@ struct RendererSettings {
   // Lights
   bool localLightsEnabled = true; ///< Point and spot lights
 
+  // Post-process
+  /// Scales the HDR color before tone mapping, in stops (2^exposure).
+  float exposure = 0.0f;
+  bool toneMapping = true; ///< ACES filmic curve, plain clamp otherwise
+
   // Performance
   bool frustumCulling = true;
 

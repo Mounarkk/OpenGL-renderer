@@ -299,13 +299,15 @@ PostProcessingPass::PostProcessingPass() {
 }
 
 void PostProcessingPass::execute(const std::vector<RenderCommand> &,
-                                 const FrameContext &) {
+                                 const FrameContext &frame) {
   GLDebugGroup group("Post-process pass");
   FrameBuffer::unbind();
   glViewport(0, 0, mWidth, mHeight);
   glDisable(GL_DEPTH_TEST);
 
   mShader->use();
+  mShader->setFloat("uExposure", std::exp2(frame.settings.exposure));
+  mShader->setBool("uToneMapping", frame.settings.toneMapping);
   glBindTextureUnit(kScreenUnit, mSourceTexture);
   mQuadVAO->bind();
   glDrawArrays(GL_TRIANGLES, 0, 6);

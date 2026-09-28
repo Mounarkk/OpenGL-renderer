@@ -67,6 +67,12 @@ void DebugUI::build(const DebugUIContext &context) {
   buildLocalLightSection(context);
   buildCameraSection(context.camera);
 
+  if (ImGui::CollapsingHeader("Post-process")) {
+    ImGui::SliderFloat("Exposure", &context.settings.exposure, -5.0f, 5.0f,
+                       "%.1f stops");
+    ImGui::Checkbox("Tone mapping (ACES)", &context.settings.toneMapping);
+  }
+
   if (ImGui::CollapsingHeader("Performance")) {
     ImGui::Checkbox("Frustum culling", &context.settings.frustumCulling);
   }
