@@ -5,6 +5,7 @@
 #include "../scene/Scene.h"
 #include "ModelLoader.h"
 
+#include <assimp/GltfMaterial.h>
 #include <assimp/material.h>
 
 #include <algorithm>
@@ -98,8 +99,79 @@ ResourceManager::loadMaterial(const aiMaterial &source,
   if (normal)
     material->setTexture(TextureType::Normal, normal);
 
-  convertPhongParameters(source, directory, *material);
+  // Assimp only sets the metallic factor for metallic-roughness formats
+  // (glTF, some FBX). Everything else is described with Phong parameters.
+  float metallic = 0.0f;
+  if (source.Get(AI_MATKEY_METALLIC_FACTOR, metallic) == AI_SUCCESS)
+    importMetallicRoughness(source, directory, *material);
+  else
+    convertPhongParameters(source, directory, *material);
   return material;
+}
+
+void ResourceManager::importMetallicRoughness(const aiMaterial &source,
+                                              const std::string &directory,
+                                              Material &material) {
+  // Factors always multiply the maps in glTF
+  aiColor4D baseColor(1.0f, 1.0f, 1.0f, 1.0f);
+  if (source.Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
+    material.setAlbedo(
+        glm::vec4(baseColor.r, baseColor.g, baseColor.b, baseColor.a));
+
+  float factor = 1.0f;
+  if (source.Get(AI_MATKEY_METALLIC_FACTOR, factor) == AI_SUCCESS)
+    material.setMetallic(factor);
+  factor = 1.0f;
+  if (source.Get(AI_MATKEY_ROUGHNESS_FACTOR, factor) == AI_SUCCESS)
+    material.setRoughness(factor);
+
+  // Assimp exposes the packed glTF texture (roughness G, metallic B) under
+  // both the metalness and roughness types
+  if (auto metallicRoughness = loadMaterialTexture(
+          source, aiTextureType_METALNESS, directory, false))
+    material.setTexture(TextureType::MetallicRoughness, metallicRoughness);
+
+  // glTF occlusion arrives as a lightmap, other formats as ambient occlusion
+  auto occlusion =
+      loadMaterialTexture(source, aiTextureType_LIGHTMAP, directory, false);
+  if (!occlusion)
+    occlusion = loadMaterialTexture(source, aiTextureType_AMBIENT_OCCLUSION,
+                                    directory, false);
+  if (occlusion)
+    material.setTexture(TextureType::Occlusion, occlusion);
+
+  importEmissive(source, directory, material);
+
+  aiString alphaMode;
+  if (source.Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
+    const std::string mode = alphaMode.C_Str();
+    float cutoff = 0.5f;
+    source.Get(AI_MATKEY_GLTF_ALPHACUTOFF, cutoff);
+    if (mode == "OPAQUE")
+      material.setAlphaMode(AlphaMode::Opaque);
+    else
+      // Blending is not supported yet, BLEND is approximated with a cut-out
+      material.setAlphaMode(AlphaMode::Mask, cutoff);
+  }
+}
+
+void ResourceManager::importEmissive(const aiMaterial &source,
+                                     const std::string &directory,
+                                     Material &material) {
+  aiColor3D emissive(0.0f, 0.0f, 0.0f);
+  source.Get(AI_MATKEY_COLOR_EMISSIVE, emissive);
+  float strength = 1.0f;
+  source.Get(AI_MATKEY_EMISSIVE_INTENSITY, strength);
+
+  if (auto map = loadMaterialTexture(source, aiTextureType_EMISSIVE, directory,
+                                     true)) {
+    material.setTexture(TextureType::Emissive, map);
+    // A map with a black factor would be invisible, some exporters omit it
+    if (emissive.IsBlack())
+      emissive = aiColor3D(1.0f, 1.0f, 1.0f);
+  }
+  material.setEmissive(glm::vec3(emissive.r, emissive.g, emissive.b) *
+                       strength);
 }
 
 void ResourceManager::convertPhongParameters(const aiMaterial &source,
@@ -129,6 +201,9 @@ void ResourceManager::convertPhongParameters(const aiMaterial &source,
       shininess > 0.0f)
     material.setRoughness(
         std::clamp(std::sqrt(2.0f / (shininess + 2.0f)), 0.2f, 1.0f));
+
+  // Ke and map_Ke
+  importEmissive(source, directory, material);
 }
 
 std::shared_ptr<Model>

@@ -65,6 +65,15 @@ private:
   static std::unordered_map<std::string, std::weak_ptr<Shader>> sShaderCache;
   static std::unordered_map<std::string, std::shared_ptr<Model>> sModelCache;
 
+  /// Reads glTF-style metallic-roughness parameters and maps.
+  static void importMetallicRoughness(const aiMaterial &source,
+                                      const std::string &directory,
+                                      Material &material);
+
+  /// Emissive color, strength and map, common to every format.
+  static void importEmissive(const aiMaterial &source,
+                             const std::string &directory, Material &material);
+
   /// Fills the metallic-roughness parameters from the Phong ones of formats
   /// such as OBJ (Kd, Ks, Ns, specular map).
   static void convertPhongParameters(const aiMaterial &source,
