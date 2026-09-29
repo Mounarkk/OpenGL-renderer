@@ -38,6 +38,9 @@ struct ApplicationOptions {
 
   /// Starts with the cascade debug view enabled.
   bool showCascades = false;
+
+  /// Material channel shown instead of the lit image.
+  DebugView debugView = DebugView::Lit;
 };
 
 /**

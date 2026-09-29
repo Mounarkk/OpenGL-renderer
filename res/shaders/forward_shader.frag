@@ -34,6 +34,9 @@ struct Material {
 };
 uniform Material uMaterial;
 
+// DebugView of RendererSettings, 0 is the lit result
+uniform int uDebugView;
+
 // Slope part of the depth bias stops growing past this tangent
 const float SHADOW_BIAS_MAX_SLOPE = 10.0;
 
@@ -178,6 +181,23 @@ void main()
         }
     }
 
+    vec3 emissive = texture(uEmissiveMap, uv).rgb * uMaterial.emissive;
+
+    if (uDebugView != 0)
+    {
+        // Colors are shown as they are, data is pre-darkened so that the
+        // gamma correction of the post-process pass displays the raw value
+        vec3 debug;
+        if (uDebugView == 1) debug = albedo.rgb;
+        else if (uDebugView == 2) debug = pow(s.normal * 0.5 + 0.5, vec3(2.2));
+        else if (uDebugView == 3) debug = vec3(pow(metallic, 2.2));
+        else if (uDebugView == 4) debug = vec3(pow(roughness, 2.2));
+        else if (uDebugView == 5) debug = vec3(pow(s.occlusion, 2.2));
+        else debug = emissive;
+        FragColor = vec4(debug, 1.0);
+        return;
+    }
+
     vec3 viewDir = normalize(frame.cameraPosition.xyz - s.position);
     int layer = selectCascade(s.position);
 
@@ -194,7 +214,7 @@ void main()
     for (int i = 0; i < lights.counts.y; ++i)
         result += spotLightContribution(lights.spotLights[i], s, viewDir);
 
-    result += texture(uEmissiveMap, uv).rgb * uMaterial.emissive;
+    result += emissive;
 
     if (shadows.flags.z != 0 && shadows.flags.x != 0)
         result *= cascadeTint(layer);

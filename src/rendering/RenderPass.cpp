@@ -244,6 +244,7 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
   // Camera, lights and shadow data come from the uniform blocks, only the
   // material and the model matrix change between draws
   mShader->use();
+  mShader->setInt("uDebugView", static_cast<int>(frame.settings.debugView));
   glBindTextureUnit(kShadowMapUnit, mShadowMap);
 
   const Frustum view(frame.projection * frame.view);
@@ -306,8 +307,11 @@ void PostProcessingPass::execute(const std::vector<RenderCommand> &,
   glDisable(GL_DEPTH_TEST);
 
   mShader->use();
-  mShader->setFloat("uExposure", std::exp2(frame.settings.exposure));
-  mShader->setBool("uToneMapping", frame.settings.toneMapping);
+  // Debug views show raw values: no exposure and no tone mapping
+  const bool lit = frame.settings.debugView == DebugView::Lit;
+  mShader->setFloat("uExposure",
+                    lit ? std::exp2(frame.settings.exposure) : 1.0f);
+  mShader->setBool("uToneMapping", lit && frame.settings.toneMapping);
   glBindTextureUnit(kScreenUnit, mSourceTexture);
   mQuadVAO->bind();
   glDrawArrays(GL_TRIANGLES, 0, 6);

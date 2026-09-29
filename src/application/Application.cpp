@@ -105,6 +105,7 @@ void Application::Initialize() {
   m_Renderer = std::make_unique<ForwardRenderer>(m_Width, m_Height);
   m_Renderer->getSettings().localLightsEnabled = !m_Options.sunOnly;
   m_Renderer->getSettings().showCascades = m_Options.showCascades;
+  m_Renderer->getSettings().debugView = m_Options.debugView;
 
   // After our callbacks are installed: the ImGui backend chains to them
   m_DebugUI = std::make_unique<DebugUI>(m_Window);

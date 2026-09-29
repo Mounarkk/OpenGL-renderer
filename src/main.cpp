@@ -1,24 +1,29 @@
 #include "application/Application.h"
 #include "core/Logger.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <iterator>
 
 namespace {
 void printUsage(const char *program) {
-  std::cout << "Usage: " << program << " [options]\n"
-            << "  --model <file>        display a model instead of the test "
-               "scene\n"
-            << "  --scale <factor>      uniform scale applied to --model\n"
-            << "  --flip-uvs            for --model files with top-left UVs\n"
-            << "  --camera x,y,z,yaw,pitch  initial camera, angles in degrees\n"
-            << "  --sun azimuth,elevation   initial sun angles in degrees\n"
-            << "  --sun-only            disable the point and spot lights\n"
-            << "  --cascades            start with the cascade debug view\n"
-            << "  --screenshot <file>   render a few frames, save a PNG and "
-               "quit\n";
+  std::cout
+      << "Usage: " << program << " [options]\n"
+      << "  --model <file>        display a model instead of the test "
+         "scene\n"
+      << "  --scale <factor>      uniform scale applied to --model\n"
+      << "  --flip-uvs            for --model files with top-left UVs\n"
+      << "  --camera x,y,z,yaw,pitch  initial camera, angles in degrees\n"
+      << "  --sun azimuth,elevation   initial sun angles in degrees\n"
+      << "  --sun-only            disable the point and spot lights\n"
+      << "  --debug-view <name>   lit, albedo, normals, metallic, roughness,\n"
+      << "                        occlusion or emissive\n"
+      << "  --cascades            start with the cascade debug view\n"
+      << "  --screenshot <file>   render a few frames, save a PNG and "
+         "quit\n";
 }
 } // namespace
 
@@ -54,6 +59,18 @@ int main(int argc, char **argv) {
       options.hasSunOverride = true;
     } else if (std::strcmp(argv[i], "--sun-only") == 0) {
       options.sunOnly = true;
+    } else if (std::strcmp(argv[i], "--debug-view") == 0 && hasValue) {
+      const char *views[] = {"lit",       "albedo",    "normals", "metallic",
+                             "roughness", "occlusion", "emissive"};
+      const char *name = argv[++i];
+      const auto *found = std::find_if(
+          std::begin(views), std::end(views),
+          [name](const char *v) { return std::strcmp(v, name) == 0; });
+      if (found == std::end(views)) {
+        printUsage(argv[0]);
+        return 1;
+      }
+      options.debugView = static_cast<DebugView>(found - std::begin(views));
     } else if (std::strcmp(argv[i], "--cascades") == 0) {
       options.showCascades = true;
     } else {

@@ -1,6 +1,19 @@
 #pragma once
 #include <cstddef>
 
+/// What the lighting pass outputs. Anything but Lit shows one material
+/// channel as is, without lighting, exposure or tone mapping.
+enum class DebugView {
+  Lit,
+  Albedo,
+  Normals,
+  Metallic,
+  Roughness,
+  Occlusion,
+  Emissive,
+  Count
+};
+
 /// Tweakable renderer options, edited live from the debug UI.
 struct RendererSettings {
   // Shadows
@@ -26,6 +39,7 @@ struct RendererSettings {
   bool frustumCulling = true;
 
   // Debug views
+  DebugView debugView = DebugView::Lit;
   bool showCascades = false;
   bool showLightGizmos = true;
 };

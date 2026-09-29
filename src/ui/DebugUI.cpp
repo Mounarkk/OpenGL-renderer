@@ -7,6 +7,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -66,6 +67,17 @@ void DebugUI::build(const DebugUIContext &context) {
   buildShadowSection(context.settings);
   buildLocalLightSection(context);
   buildCameraSection(context.camera);
+
+  if (ImGui::CollapsingHeader("Debug view")) {
+    static const char *views[] = {"Lit",      "Albedo",    "Normals",
+                                  "Metallic", "Roughness", "Occlusion",
+                                  "Emissive"};
+    static_assert(std::size(views) == static_cast<size_t>(DebugView::Count));
+    int view = static_cast<int>(context.settings.debugView);
+    if (ImGui::Combo("Output", &view, views,
+                     static_cast<int>(std::size(views))))
+      context.settings.debugView = static_cast<DebugView>(view);
+  }
 
   if (ImGui::CollapsingHeader("Post-process")) {
     ImGui::SliderFloat("Exposure", &context.settings.exposure, -5.0f, 5.0f,
