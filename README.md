@@ -7,13 +7,14 @@ to implement rendering techniques from scratch.
 
 ## Features
 
-- Forward Blinn-Phong lighting: a sun plus up to 64 point and 16 spot lights,
-  all ECS entities with a range
+- Physically based shading: metallic-roughness materials (glTF), GGX BRDF,
+  ACES tone mapping, with OBJ materials converted on import
+- A sun plus up to 64 point and 16 spot lights, all ECS entities with a range
 - Cascaded shadow maps for the sun: 4 cascades rendered in one pass with
   geometry shader instancing, per-cascade culling, stabilized against
   shimmering, filtered with 3x3 PCF
 - Uniform buffers for per-frame data, direct state access, frustum culling
-- Normal mapping, alpha-tested foliage (shadows included)
+- Normal, occlusion and emissive maps, alpha-tested foliage (shadows included)
 - sRGB-correct pipeline: HDR color target, gamma correction in post-process
 - Model loading through Assimp (OBJ, glTF, FBX...), textures cached and shared
 - Entity-component scene built on EnTT, cube map skybox
@@ -24,8 +25,12 @@ to implement rendering techniques from scratch.
 |---|---|
 | ![Cascades](docs/images/cascades.jpg) | ![Sponza](docs/images/sponza.jpg) |
 
-How the shadows work is described in [docs/cascaded-shadow-maps.md](docs/cascaded-shadow-maps.md),
-and how C++ and the shaders share data in [docs/shader-interface.md](docs/shader-interface.md).
+![Damaged Helmet](docs/images/helmet.jpg)
+
+Notes on the techniques:
+[cascaded shadow maps](docs/cascaded-shadow-maps.md),
+[physically based shading](docs/pbr.md) and
+[how C++ and the shaders share data](docs/shader-interface.md).
 
 ## Building
 
@@ -45,7 +50,11 @@ and `res/` from any working directory.
 Models are not versioned. The default scene uses the
 [LearnOpenGL backpack](https://learnopengl.com/Model-Loading/Model), extracted
 into `res/models/backpack/`. Sponza and other test scenes come from
-[McGuire's Computer Graphics Archive](https://casual-effects.com/data/).
+[McGuire's Computer Graphics Archive](https://casual-effects.com/data/), glTF
+test models from the
+[Khronos glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets)
+(use the `glTF` folder of a model, embedded `.glb` textures are not supported
+yet).
 
 ## Usage
 
@@ -69,7 +78,8 @@ Any model can be opened directly:
 ```
 
 `--screenshot out.png` renders a few frames, saves them and quits, which is
-how the images above were made.
+how the images above were made. `--debug-view roughness` (or albedo,
+normals, metallic, occlusion, emissive) shows a single material channel.
 
 ## Code layout
 
@@ -91,3 +101,10 @@ target, then a post-process pass to the window.
 ## Next
 
 See [TODO.md](TODO.md).
+
+## Credits
+
+Damaged Helmet by theblueturtle_
+([CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)), glTF
+conversion by ctxwing
+([CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)).

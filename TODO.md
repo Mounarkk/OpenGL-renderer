@@ -1,7 +1,8 @@
 ## Rendering
 - [x] Directional light cascaded shadow maps
 - [x] OpenGL 4.5, uniform buffers, ECS lights with a range, frustum culling
-- [ ] PBR materials and tone mapping
+- [x] PBR materials and tone mapping
+- [ ] Image based lighting (irradiance and prefiltered environment maps)
 - [ ] Spot light shadows, point light shadow atlas
 - [ ] Clustered light culling (compute)
 - [ ] Volumetric fog (froxels)
