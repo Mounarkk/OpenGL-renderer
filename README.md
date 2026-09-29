@@ -1,44 +1,93 @@
-# OpenGL Renderer
+<h1 align="center">OpenGL Renderer</h1>
 
-A small real-time renderer in C++17 and OpenGL 4.5 that I use as a playground
-to implement rendering techniques from scratch.
+<p align="center">
+  A real-time renderer written from scratch in C++17 and OpenGL 4.5,<br>
+  used as a playground to implement and understand rendering techniques.
+</p>
 
-![Cascaded shadow maps](docs/images/shadows.jpg)
+<p align="center">
+  <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white">
+  <img alt="OpenGL 4.5" src="https://img.shields.io/badge/OpenGL-4.5%20core-5586A4?logo=opengl&logoColor=white">
+  <img alt="CMake" src="https://img.shields.io/badge/build-CMake-064F8C?logo=cmake&logoColor=white">
+  <img alt="Linux" src="https://img.shields.io/badge/tested%20on-Linux-FCC624?logo=linux&logoColor=black">
+</p>
+
+<p align="center">
+  <img src="docs/images/hero.jpg" alt="Low sun casting long cascaded shadows across the test scene">
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#gallery">Gallery</a> •
+  <a href="#getting-started">Getting started</a> •
+  <a href="#controls">Controls</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#documentation">Documentation</a> •
+  <a href="#roadmap">Roadmap</a>
+</p>
 
 ## Features
 
-- Physically based shading: metallic-roughness materials (glTF), GGX BRDF,
-  ACES tone mapping, with OBJ materials converted on import
-- A sun plus up to 64 point and 16 spot lights, all ECS entities with a range
-- Cascaded shadow maps for the sun: 4 cascades rendered in one pass with
-  geometry shader instancing, per-cascade culling, stabilized against
-  shimmering, filtered with 3x3 PCF
-- Uniform buffers for per-frame data, direct state access, frustum culling
-- Normal, occlusion and emissive maps, alpha-tested foliage (shadows included)
-- sRGB-correct pipeline: HDR color target, gamma correction in post-process
-- Model loading through Assimp (OBJ, glTF, FBX...), textures cached and shared
-- Entity-component scene built on EnTT, cube map skybox
-- Dear ImGui panel to tweak lights and shadow settings live, point lights
-  shown as colored spheres
+**Shading**
+- Physically based materials (glTF metallic-roughness): albedo, metallic,
+  roughness, normal, occlusion and emissive maps
+- Cook-Torrance BRDF: GGX distribution, height-correlated Smith visibility,
+  Schlick Fresnel
+- OBJ and other Phong materials converted on import (`Kd`, `Ks`, `Ns`, `Ke`)
+- HDR rendering, exposure and ACES filmic tone mapping, sRGB-correct pipeline
 
-| Cascade debug view (`C`) | Crytek Sponza |
-|---|---|
-| ![Cascades](docs/images/cascades.jpg) | ![Sponza](docs/images/sponza.jpg) |
+**Lights and shadows**
+- A sun plus up to 64 point and 16 spot lights, all ECS entities with a
+  finite range and windowed inverse-square falloff
+- Cascaded shadow maps for the sun: 4 cascades in a single pass with
+  geometry shader instancing, per-cascade culling, texel snapping against
+  shimmering, normal offset and slope-scaled bias, 3x3 PCF
+- Alpha-tested foliage and fences, in both the lighting and the shadows
 
-![Damaged Helmet](docs/images/helmet.jpg)
+**Engine**
+- Per-frame data in std140 uniform blocks, shared between C++ and GLSL
+  through a single interface header
+- Direct state access and immutable storage for every OpenGL object
+- Frustum culling, draw sorting by material
+- Shader preprocessor with `#include` and injected constants
+- Assimp import (OBJ, glTF, FBX...), shared caches for textures, shaders
+  and models
+- Entity-component scene on EnTT
 
-Notes on the techniques:
-[cascaded shadow maps](docs/cascaded-shadow-maps.md),
-[physically based shading](docs/pbr.md) and
-[how C++ and the shaders share data](docs/shader-interface.md).
+**Tooling**
+- Dear ImGui panel to edit lights, shadows, exposure and the camera live
+- Debug views for each material channel and for the shadow cascades
+- Sun drawn in the sky and light markers, to check lighting at a glance
+- Command-line scene loading and screenshots, for scripted captures
+- Debug groups around every pass for RenderDoc and Nsight
 
-## Building
+## Gallery
 
-Every dependency is vendored in `vendor/` (GLFW, glad, GLM, Assimp, EnTT,
-spdlog, stb, Dear ImGui). You need CMake 3.10+, a C++17 compiler and a GPU
-driver supporting OpenGL 4.5 (Linux or Windows, macOS stops at 4.1).
+| Cascaded shadow maps | Cascade debug view |
+|:---:|:---:|
+| ![Shadows](docs/images/shadows.jpg) | ![Cascades](docs/images/cascades.jpg) |
+| **Crytek Sponza** (converted OBJ materials) | **Damaged Helmet** (glTF PBR) |
+| ![Sponza](docs/images/sponza.jpg) | ![Damaged Helmet](docs/images/helmet.jpg) |
+
+![Material channels](docs/images/material-channels.jpg)
+<p align="center"><sub>Albedo, normals, roughness and metallic debug views of the Damaged Helmet</sub></p>
+
+## Getting started
+
+### Requirements
+
+- A C++17 compiler (GCC, Clang or MSVC) and CMake 3.10+
+- A GPU and driver supporting OpenGL 4.5. Developed on Linux with Mesa.
+  Windows should work but is untested. macOS stops at OpenGL 4.1 and is not
+  supported.
+
+Every library is vendored in `vendor/`, nothing else to install.
+
+### Build and run
 
 ```bash
+git clone https://github.com/Mounarkk/OpenGL-renderer.git
+cd OpenGL-renderer
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ./build/opengl_renderer
@@ -47,62 +96,108 @@ cmake --build build -j
 The project directory is baked into the executable, so it finds `config.txt`
 and `res/` from any working directory.
 
-Models are not versioned. The default scene uses the
-[LearnOpenGL backpack](https://learnopengl.com/Model-Loading/Model), extracted
-into `res/models/backpack/`. Sponza and other test scenes come from
-[McGuire's Computer Graphics Archive](https://casual-effects.com/data/), glTF
-test models from the
-[Khronos glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets)
-(use the `glTF` folder of a model, embedded `.glb` textures are not supported
-yet).
+### Assets
 
-## Usage
+Models are not versioned, download them into `res/models/`:
+
+| Scene | Source | Folder |
+|---|---|---|
+| Default scene (backpack) | [LearnOpenGL](https://learnopengl.com/Model-Loading/Model) | `res/models/backpack/` |
+| Sponza, Cornell Box, San Miguel... | [McGuire Computer Graphics Archive](https://casual-effects.com/data/) | any |
+| glTF PBR test models | [Khronos glTF Sample Assets](https://github.com/KhronosGroup/glTF-Sample-Assets) | the `glTF` folder of a model |
+
+Embedded textures (`.glb`) are not supported yet.
+
+## Controls
 
 | Input | Action |
 |---|---|
-| `WASD`, `Space`, `Ctrl` | Move, `Shift` to go faster |
+| `WASD` `Space` `Ctrl` | Move, hold `Shift` to go faster |
 | Mouse, scroll | Look around, zoom |
-| `Left` / `Right` | Turn the sun around |
-| `Up` / `Down` | Raise / lower the sun |
-| `L` | Toggle the point and spot lights, leaving only the sun |
+| `←` `→` / `↑` `↓` | Turn / raise the sun |
+| `L` | Toggle the point and spot lights |
 | `C` | Toggle the cascade debug view |
-| `Tab` | Free the mouse to use the debug panel, and back |
-| `F1` | Hide the debug panel |
+| `Tab` | Switch the mouse between the camera and the panel |
+| `F1` | Hide the panel |
 | `F12` | Save a screenshot to `screenshots/` |
 
-Any model can be opened directly:
+| Option | Effect |
+|---|---|
+| `--model <file>` | Open a model instead of the default scene |
+| `--scale <factor>` | Uniform scale of the model |
+| `--flip-uvs` | For files authored with a top-left UV origin |
+| `--camera x,y,z,yaw,pitch` | Initial camera, angles in degrees |
+| `--sun azimuth,elevation` | Initial sun direction, in degrees |
+| `--sun-only` | Start without the point and spot lights |
+| `--cascades` | Start with the cascade debug view |
+| `--debug-view <channel>` | `albedo`, `normals`, `metallic`, `roughness`, `occlusion` or `emissive` |
+| `--screenshot <file>` | Render a few frames, save a PNG and quit |
 
 ```bash
-./build/opengl_renderer --model path/to/scene.gltf --scale 0.01
-./build/opengl_renderer --help
+# The Sponza shot of the gallery
+./build/opengl_renderer --model "res/models/sponza/sponza.obj" --scale 0.01 \
+    --camera -11,1.5,-0.5,0,5 --screenshot sponza.png
 ```
 
-`--screenshot out.png` renders a few frames, saves them and quits, which is
-how the images above were made. `--debug-view roughness` (or albedo,
-normals, metallic, occlusion, emissive) shows a single material channel.
+## Architecture
 
-## Code layout
+A frame of the forward renderer:
+
+```mermaid
+flowchart LR
+    Scene[(EnTT scene)] -->|meshes, lights| Submit[Submit<br/>culling, sorting]
+    Submit --> UBO[Frame and light<br/>uniform blocks]
+    UBO --> Shadow[Shadow pass<br/>4 cascades, 1 draw per mesh]
+    Shadow -->|depth array| Lighting[Lighting pass<br/>GGX, HDR target]
+    Lighting --> Sky[Skybox and<br/>light markers]
+    Sky --> Post[Post-process<br/>exposure, ACES, gamma]
+    Post --> UI[ImGui panel]
+```
 
 ```
 src/
-  application/  window, main loop, test scenes
-  core/         config, logging, exceptions
-  gl/           RAII wrappers for OpenGL objects
-  rendering/    render passes, materials, lights
-  resource/     Assimp import, texture/shader/model caches
-  scene/        EnTT scene, components, camera
-  ui/           Dear ImGui debug panel
-res/shaders/    GLSL sources, common/ holds the shared uniform blocks
+├── application/   window, main loop, test scenes, command line
+├── core/          configuration, logging, exceptions
+├── gl/            RAII wrappers over OpenGL objects (DSA)
+├── rendering/     renderer, passes, materials, frustum, shader interface
+├── resource/      Assimp import, texture, shader and model caches
+├── scene/         EnTT scene, components, camera
+└── ui/            Dear ImGui debug panel
+res/shaders/       GLSL, common/ holds the shared uniform blocks and BRDF
+docs/              notes on the techniques
 ```
 
-A frame goes through `ForwardRenderer`: shadow pass, lighting pass into an HDR
-target, then a post-process pass to the window.
+## Documentation
 
-## Next
+Notes written while implementing each technique, with the reasoning behind
+the choices:
 
-See [TODO.md](TODO.md).
+- [Cascaded shadow maps](docs/cascaded-shadow-maps.md): splits, stable
+  fitting, single-pass rendering, biasing
+- [Physically based shading](docs/pbr.md): material model, BRDF, conversion
+  of older formats, tone mapping
+- [Shader interface](docs/shader-interface.md): uniforms, uniform blocks,
+  binding points, std140
 
-## Credits
+## Roadmap
+
+- [x] Cascaded shadow maps
+- [x] OpenGL 4.5, uniform buffers, ECS lights, frustum culling
+- [x] Physically based materials and tone mapping
+- [ ] Image based lighting
+- [ ] Spot light shadows, point light shadow atlas
+- [ ] Clustered light culling in compute
+- [ ] Volumetric fog
+
+Details in [TODO.md](TODO.md).
+
+## Acknowledgements
+
+Libraries: [GLFW](https://www.glfw.org/), [glad](https://github.com/Dav1dde/glad),
+[GLM](https://github.com/g-truc/glm), [Assimp](https://github.com/assimp/assimp),
+[EnTT](https://github.com/skypjack/entt), [spdlog](https://github.com/gabime/spdlog),
+[stb](https://github.com/nothings/stb) and
+[Dear ImGui](https://github.com/ocornut/imgui).
 
 Damaged Helmet by theblueturtle_
 ([CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)), glTF
