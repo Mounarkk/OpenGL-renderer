@@ -6,8 +6,15 @@
 #include <unordered_map>
 #include <vector>
 
+/// A stage of a program: its type (GL_VERTEX_SHADER...) and source file.
+struct ShaderStage {
+  GLenum type;
+  std::string path;
+};
+
 /**
- * GLSL program built from a vertex, a fragment and an optional geometry stage.
+ * GLSL program built from a vertex, a fragment and an optional geometry
+ * stage, or from a single compute stage.
  *
  * Sources go through a small preprocessor before compilation:
  * - `#include "file"` is replaced by the file content, resolved relative to
@@ -22,6 +29,9 @@ class Shader {
 public:
   Shader(const std::string &vertexPath, const std::string &fragmentPath,
          const std::string &geometryPath = "", const std::string &defines = "");
+  /// Links any combination of stages, e.g. a single GL_COMPUTE_SHADER.
+  explicit Shader(const std::vector<ShaderStage> &stages,
+                  const std::string &defines = "");
   ~Shader();
 
   Shader(const Shader &) = delete;
@@ -31,6 +41,11 @@ public:
   void clean();
 
   void use() const;
+
+  /// Runs a compute program on enough work groups to cover `width` x
+  /// `height` x `depth` invocations, with the given local size.
+  void dispatch(GLuint width, GLuint height, GLuint depth, GLuint localSizeX,
+                GLuint localSizeY, GLuint localSizeZ = 1) const;
 
   void setBool(const std::string &name, bool value) const;
   void setInt(const std::string &name, int value) const;

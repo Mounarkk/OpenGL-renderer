@@ -46,6 +46,20 @@ std::shared_ptr<Shader> ResourceManager::loadShader(const std::string &vsPath,
   return shader;
 }
 
+std::shared_ptr<Shader>
+ResourceManager::loadComputeShader(const std::string &path) {
+  if (const auto it = sShaderCache.find(path); it != sShaderCache.end())
+    if (auto shader = it->second.lock())
+      return shader;
+
+  auto shader = std::make_shared<Shader>(
+      std::vector<ShaderStage>{{GL_COMPUTE_SHADER, path}},
+      ShaderInterface::defines());
+  sShaderCache[path] = shader;
+  Logger::get()->debug("Compiled compute shader {}", path);
+  return shader;
+}
+
 std::shared_ptr<Texture> ResourceManager::loadMaterialTexture(
     const aiMaterial &material, const aiTextureType type,
     const std::string &directory, const bool sRGB) {

@@ -36,6 +36,9 @@ public:
                                             const std::string &fsPath,
                                             const std::string &gsPath = "");
 
+  /// Same as loadShader, for a compute program.
+  static std::shared_ptr<Shader> loadComputeShader(const std::string &path);
+
   /**
    * Converts an Assimp material. Missing or unreadable textures are logged
    * and replaced by the material defaults instead of failing the import.

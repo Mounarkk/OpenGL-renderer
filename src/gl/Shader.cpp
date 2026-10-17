@@ -118,31 +118,46 @@ GLuint compileStage(const GLenum stage, const std::string &path,
   }
   return shader;
 }
+
+std::vector<ShaderStage> graphicsStages(const std::string &vertexPath,
+                                        const std::string &fragmentPath,
+                                        const std::string &geometryPath) {
+  std::vector<ShaderStage> stages = {{GL_VERTEX_SHADER, vertexPath},
+                                     {GL_FRAGMENT_SHADER, fragmentPath}};
+  if (!geometryPath.empty())
+    stages.push_back({GL_GEOMETRY_SHADER, geometryPath});
+  return stages;
+}
 } // namespace
 
 Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath,
-               const std::string &geometryPath, const std::string &defines) {
-  std::vector<GLuint> stages;
-  auto deleteStages = [&stages]() {
-    for (const GLuint stage : stages)
-      glDeleteShader(stage);
+               const std::string &geometryPath, const std::string &defines)
+    : Shader(graphicsStages(vertexPath, fragmentPath, geometryPath), defines) {}
+
+Shader::Shader(const std::vector<ShaderStage> &stages,
+               const std::string &defines) {
+  std::vector<GLuint> shaders;
+  auto deleteShaders = [&shaders]() {
+    for (const GLuint shader : shaders)
+      glDeleteShader(shader);
   };
 
+  std::string name;
   try {
-    stages.push_back(compileStage(GL_VERTEX_SHADER, vertexPath, defines));
-    stages.push_back(compileStage(GL_FRAGMENT_SHADER, fragmentPath, defines));
-    if (!geometryPath.empty())
-      stages.push_back(compileStage(GL_GEOMETRY_SHADER, geometryPath, defines));
+    for (const auto &[type, path] : stages) {
+      shaders.push_back(compileStage(type, path, defines));
+      name += (name.empty() ? "" : " + ") + path;
+    }
   } catch (...) {
-    deleteStages();
+    deleteShaders();
     throw;
   }
 
   mID = glCreateProgram();
-  for (const GLuint stage : stages)
-    glAttachShader(mID, stage);
+  for (const GLuint shader : shaders)
+    glAttachShader(mID, shader);
   glLinkProgram(mID);
-  deleteStages();
+  deleteShaders();
 
   GLint success = 0;
   glGetProgramiv(mID, GL_LINK_STATUS, &success);
@@ -153,8 +168,7 @@ Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath,
     glGetProgramInfoLog(mID, logLength, nullptr, log.data());
     glDeleteProgram(mID);
     mID = 0;
-    throw ShaderException(vertexPath + " + " + fragmentPath,
-                          "linking failed:\n" + log);
+    throw ShaderException(name, "linking failed:\n" + log);
   }
 }
 
@@ -168,6 +182,17 @@ void Shader::clean() {
 }
 
 void Shader::use() const { glUseProgram(mID); }
+
+void Shader::dispatch(const GLuint width, const GLuint height,
+                      const GLuint depth, const GLuint localSizeX,
+                      const GLuint localSizeY, const GLuint localSizeZ) const {
+  const auto groups = [](const GLuint size, const GLuint local) {
+    return (size + local - 1) / local;
+  };
+  glUseProgram(mID);
+  glDispatchCompute(groups(width, localSizeX), groups(height, localSizeY),
+                    groups(depth, localSizeZ));
+}
 
 void Shader::setBool(const std::string &name, const bool value) const {
   glProgramUniform1i(mID, getUniformLocation(name), static_cast<int>(value));
