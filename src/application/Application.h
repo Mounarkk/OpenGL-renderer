@@ -17,6 +17,10 @@ struct ApplicationOptions {
   /// application exits. Handy to produce screenshots from a script.
   std::string screenshotPath;
 
+  /// Grid of spheres of increasing roughness, dielectric and metallic,
+  /// instead of the default test scene.
+  bool sphereScene = false;
+
   /// Model to display instead of the default test scene.
   std::string modelPath;
   float modelScale = 1.0f;
@@ -81,6 +85,7 @@ private:
   void SaveScreenshot(const std::string &path) const;
 
   void SetupShadowTestScene();
+  void SetupSphereScene();
   void SetupModelScene(const std::string &path, float scale,
                        const ModelImportOptions &import);
   void CreateGroundPlane(float halfSize);

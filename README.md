@@ -124,6 +124,7 @@ Embedded textures (`.glb`) are not supported yet.
 | Option | Effect |
 |---|---|
 | `--model <file>` | Open a model instead of the default scene |
+| `--spheres` | Open a grid of spheres, roughness from 0 to 1, dielectric and metallic |
 | `--scale <factor>` | Uniform scale of the model |
 | `--flip-uvs` | For files authored with a top-left UV origin |
 | `--camera x,y,z,yaw,pitch` | Initial camera, angles in degrees |

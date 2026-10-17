@@ -14,6 +14,7 @@ void printUsage(const char *program) {
       << "Usage: " << program << " [options]\n"
       << "  --model <file>        display a model instead of the test "
          "scene\n"
+      << "  --spheres             display a grid of material test spheres\n"
       << "  --scale <factor>      uniform scale applied to --model\n"
       << "  --flip-uvs            for --model files with top-left UVs\n"
       << "  --camera x,y,z,yaw,pitch  initial camera, angles in degrees\n"
@@ -48,6 +49,8 @@ int main(int argc, char **argv) {
       options.cameraPosition = {x, y, z};
       options.cameraYaw = yaw;
       options.cameraPitch = pitch;
+    } else if (std::strcmp(argv[i], "--spheres") == 0) {
+      options.sphereScene = true;
     } else if (std::strcmp(argv[i], "--flip-uvs") == 0) {
       options.modelImport.flipUVs = true;
     } else if (std::strcmp(argv[i], "--sun") == 0 && hasValue) {

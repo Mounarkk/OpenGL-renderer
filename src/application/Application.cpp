@@ -111,11 +111,13 @@ void Application::Initialize() {
   m_DebugUI = std::make_unique<DebugUI>(m_Window);
   SetCameraMode(true);
 
-  if (m_Options.modelPath.empty())
-    SetupShadowTestScene();
-  else
+  if (!m_Options.modelPath.empty())
     SetupModelScene(m_Options.modelPath, m_Options.modelScale,
                     m_Options.modelImport);
+  else if (m_Options.sphereScene)
+    SetupSphereScene();
+  else
+    SetupShadowTestScene();
 
   if (m_Options.hasSunOverride) {
     auto *sun = FindSun();
@@ -347,6 +349,38 @@ void Application::SetupShadowTestScene() {
   CreateTestLights();
 
   m_Camera = Camera({0.0f, 2.0f, 7.0f}, {0.0f, 1.0f, 0.0f}, -90.0f, -12.0f);
+}
+
+void Application::SetupSphereScene() {
+  // Roughness grows from left to right, the top row is metallic (gold), the
+  // bottom row a white dielectric
+  constexpr int kColumns = 7;
+  constexpr float kSpacing = 1.1f;
+  const auto sphere = Primitives::createSphere(0.45f, 48, 32);
+  for (int row = 0; row < 2; ++row) {
+    const bool metal = row == 1;
+    for (int column = 0; column < kColumns; ++column) {
+      auto material = std::make_shared<Material>();
+      material->setAlbedo(metal ? glm::vec3(1.0f, 0.78f, 0.34f)
+                                : glm::vec3(0.8f));
+      material->setMetallic(metal ? 1.0f : 0.0f);
+      material->setRoughness(static_cast<float>(column) / (kColumns - 1));
+
+      Transform transform;
+      transform.position = {
+          (static_cast<float>(column) - (kColumns - 1) * 0.5f) * kSpacing,
+          static_cast<float>(row) * kSpacing - 0.35f, 0.0f};
+      Entity entity = m_Scene.createEntity("Sphere " + std::to_string(row) +
+                                           "," + std::to_string(column));
+      entity.addComponent<Transform>(transform);
+      entity.addComponent<MeshRenderer>(sphere, material);
+    }
+  }
+
+  CreateGroundPlane(100.0f);
+  CreateSun();
+
+  m_Camera = Camera({0.0f, 0.6f, 6.5f}, {0.0f, 1.0f, 0.0f}, -90.0f, -5.0f);
 }
 
 void Application::SetupModelScene(const std::string &path, const float scale,
