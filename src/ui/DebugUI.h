@@ -47,6 +47,7 @@ private:
   bool mVisible = true;
 
   static void buildSunSection(Scene &scene);
+  static void buildEnvironmentSection(RendererSettings &settings);
   static void buildShadowSection(RendererSettings &settings);
   static void buildLocalLightSection(const DebugUIContext &context);
   static void buildCameraSection(Camera &camera);

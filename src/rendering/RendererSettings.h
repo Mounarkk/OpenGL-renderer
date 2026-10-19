@@ -29,6 +29,10 @@ struct RendererSettings {
 
   // Lights
   bool localLightsEnabled = true; ///< Point and spot lights
+  /// Image based lighting, light coming from the environment map.
+  bool environmentLighting = true;
+  /// Scales the environment, both its lighting and the sky.
+  float environmentIntensity = 0.4f;
 
   // Post-process
   /// Scales the HDR color before tone mapping, in stops (2^exposure).

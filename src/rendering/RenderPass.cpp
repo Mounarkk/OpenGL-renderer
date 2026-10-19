@@ -246,6 +246,7 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
   mShader->use();
   mShader->setInt("uDebugView", static_cast<int>(frame.settings.debugView));
   glBindTextureUnit(kShadowMapUnit, mShadowMap);
+  glBindTextureUnit(kIrradianceUnit, frame.environment->getIrradianceMap());
 
   const Frustum view(frame.projection * frame.view);
   const Material *boundMaterial = nullptr;

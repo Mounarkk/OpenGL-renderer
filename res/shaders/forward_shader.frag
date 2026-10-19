@@ -21,6 +21,7 @@ layout (binding = METALLIC_ROUGHNESS_UNIT) uniform sampler2D uMetallicRoughnessM
 layout (binding = OCCLUSION_UNIT) uniform sampler2D uOcclusionMap;
 layout (binding = EMISSIVE_UNIT) uniform sampler2D uEmissiveMap;
 layout (binding = SPECULAR_UNIT) uniform sampler2D uSpecularMap;
+layout (binding = IRRADIANCE_UNIT) uniform samplerCube uIrradianceMap;
 
 // Per material factors, multiplied with the maps. Set by Material::bind.
 struct Material {
@@ -67,16 +68,13 @@ vec3 spotLightContribution(SpotLight light, Surface s, vec3 viewDir)
     return shadeSurface(s, lightDir, viewDir, light.radianceInnerCos.rgb * attenuation);
 }
 
-// Stand-in for image based lighting: a hemisphere light, the sky ambient
-// from above fading to a darker ground bounce from below, so that surfaces
-// the sun does not reach keep their shape. The f0 term keeps metals from
-// turning black.
-const float GROUND_AMBIENT_RATIO = 0.3;
-
-vec3 ambientLight(Surface s)
+// Image based lighting: light arriving from the whole environment. The
+// irradiance map gives the diffuse part. Until reflections are in, the f0
+// term keeps metals from turning black.
+vec3 environmentLight(Surface s)
 {
-    float skyFactor = mix(GROUND_AMBIENT_RATIO, 1.0, s.normal.y * 0.5 + 0.5);
-    return (s.diffuseColor + s.f0) * lights.sun.ambient.rgb * skyFactor * s.occlusion;
+    vec3 irradiance = texture(uIrradianceMap, s.normal).rgb;
+    return (s.diffuseColor + s.f0) * irradiance * s.occlusion * lights.environment.x;
 }
 
 int selectCascade(vec3 worldPos)
@@ -201,12 +199,11 @@ void main()
     vec3 viewDir = normalize(frame.cameraPosition.xyz - s.position);
     int layer = selectCascade(s.position);
 
-    vec3 result = vec3(0.0);
+    vec3 result = environmentLight(s);
     if (lights.counts.z != 0)
     {
         float shadow = sunShadow(s.position, geometryNormal, layer);
         vec3 sunDir = -normalize(lights.sun.direction.xyz);
-        result += ambientLight(s);
         result += (1.0 - shadow) * shadeSurface(s, sunDir, viewDir, lights.sun.radiance.rgb);
     }
     for (int i = 0; i < lights.counts.x; ++i)

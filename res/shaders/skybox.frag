@@ -14,7 +14,7 @@ const vec3 SUN_COLOR = vec3(1.0, 0.95, 0.8);
 void main()
 {
     vec3 direction = normalize(TexCoords);
-    vec3 color = texture(uSkybox, direction).rgb;
+    vec3 color = texture(uSkybox, direction).rgb * lights.environment.y;
 
     // The disc is drawn where the directional light comes from
     if (lights.counts.z != 0)

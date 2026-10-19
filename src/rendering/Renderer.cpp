@@ -34,12 +34,15 @@ void Renderer::submit(Scene &scene) {
 void Renderer::collectLights(Scene &scene) {
   mLights.counts = glm::ivec4(0);
 
+  const float intensity = mSettings.environmentIntensity;
+  mLights.environment = {mSettings.environmentLighting ? intensity : 0.0f,
+                         intensity, 0.0f, 0.0f};
+
   // The first directional light is the sun
   for (const auto entity : scene.getAll<DirectionalLight>()) {
     const auto &sun = scene.getRegistry().get<DirectionalLight>(entity);
     mLights.sun.direction = glm::vec4(sun.getDirection(), 0.0f);
     mLights.sun.radiance = glm::vec4(sun.color * sun.intensity, 0.0f);
-    mLights.sun.ambient = glm::vec4(sun.ambient, 0.0f);
     mLights.counts.z = 1;
     break;
   }

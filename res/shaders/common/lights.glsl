@@ -3,7 +3,6 @@
 struct DirectionalLight {
     vec4 direction; // xyz direction the light travels in
     vec4 radiance;  // rgb color * intensity
-    vec4 ambient;   // rgb ambient term of the scene
 };
 
 struct PointLight {
@@ -20,6 +19,7 @@ struct SpotLight {
 layout (std140, binding = LIGHTS_BLOCK) uniform LightsBlock {
     DirectionalLight sun;
     ivec4 counts; // x point lights, y spot lights, z has sun
+    vec4 environment; // x lighting intensity, y sky intensity
     PointLight pointLights[MAX_POINT_LIGHTS];
     SpotLight spotLights[MAX_SPOT_LIGHTS];
 } lights;

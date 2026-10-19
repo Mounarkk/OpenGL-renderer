@@ -12,12 +12,17 @@
 #include <chrono>
 #include <cmath>
 #include <filesystem>
+#include <iterator>
 
 namespace {
 // Cube faces get a quarter of the panorama width, which keeps its
 // resolution around the horizon, within these bounds
 constexpr int kMinCubeMapSize = 64;
 constexpr int kMaxCubeMapSize = 1024;
+
+// Irradiance varies slowly with the normal, small maps are enough
+constexpr int kIrradianceSize = 32;
+constexpr int kIrradianceSourceSize = 32;
 
 constexpr GLuint kComputeLocalSize = 8;
 
@@ -43,6 +48,8 @@ EnvironmentMap::EnvironmentMap(const std::string &path) {
   glTextureParameteri(mCubeMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTextureParameteri(mCubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+  computeIrradiance();
+
   // Only to report the time spent, the GPU work is otherwise asynchronous
   glFinish();
   const auto elapsed = std::chrono::duration<double, std::milli>(
@@ -52,8 +59,10 @@ EnvironmentMap::EnvironmentMap(const std::string &path) {
 }
 
 EnvironmentMap::~EnvironmentMap() {
-  if (mCubeMap != 0 && glfwGetCurrentContext())
-    glDeleteTextures(1, &mCubeMap);
+  if (glfwGetCurrentContext()) {
+    const GLuint textures[] = {mCubeMap, mIrradianceMap};
+    glDeleteTextures(static_cast<GLsizei>(std::size(textures)), textures);
+  }
 }
 
 void EnvironmentMap::createCubeMap(const int size) {
@@ -151,4 +160,27 @@ void EnvironmentMap::createUniformSky() {
   constexpr float kGrey[] = {0.5f, 0.5f, 0.5f, 1.0f};
   createCubeMap(kMinCubeMapSize);
   glClearTexImage(mCubeMap, 0, GL_RGBA, GL_FLOAT, kGrey);
+}
+
+void EnvironmentMap::computeIrradiance() {
+  glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mIrradianceMap);
+  glTextureStorage2D(mIrradianceMap, 1, GL_RGBA16F, kIrradianceSize,
+                     kIrradianceSize);
+  glTextureParameteri(mIrradianceMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTextureParameteri(mIrradianceMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  // The mip level of the environment closest to the source size
+  int sourceLevel = 0;
+  while ((mSize >> (sourceLevel + 1)) >= kIrradianceSourceSize)
+    ++sourceLevel;
+
+  const auto shader = ResourceManager::loadComputeShader(
+      Config::getShaderPath() + "ibl/irradiance.comp");
+  shader->setInt("uSourceLevel", sourceLevel);
+  glBindTextureUnit(0, mCubeMap);
+  glBindImageTexture(0, mIrradianceMap, 0, GL_TRUE, 0, GL_WRITE_ONLY,
+                     GL_RGBA16F);
+  shader->dispatch(kIrradianceSize, kIrradianceSize, 6, kComputeLocalSize,
+                   kComputeLocalSize);
+  glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }

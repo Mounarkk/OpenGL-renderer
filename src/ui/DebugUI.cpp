@@ -64,6 +64,7 @@ void DebugUI::build(const DebugUIContext &context) {
                                          : "Tab: back to the camera, F1: hide");
 
   buildSunSection(context.scene);
+  buildEnvironmentSection(context.settings);
   buildShadowSection(context.settings);
   buildLocalLightSection(context);
   buildCameraSection(context.camera);
@@ -110,7 +111,15 @@ void DebugUI::buildSunSection(Scene &scene) {
   ImGui::SliderFloat("Elevation", &sun.elevation, 2.0f, 89.0f, "%.0f deg");
   ImGui::ColorEdit3("Color##sun", &sun.color.x);
   ImGui::SliderFloat("Intensity##sun", &sun.intensity, 0.0f, 10.0f);
-  ImGui::ColorEdit3("Ambient", &sun.ambient.x);
+}
+
+void DebugUI::buildEnvironmentSection(RendererSettings &settings) {
+  if (!ImGui::CollapsingHeader("Environment", ImGuiTreeNodeFlags_DefaultOpen))
+    return;
+
+  ImGui::Checkbox("Image based lighting", &settings.environmentLighting);
+  ImGui::SliderFloat("Intensity##environment", &settings.environmentIntensity,
+                     0.0f, 4.0f);
 }
 
 void DebugUI::buildShadowSection(RendererSettings &settings) {

@@ -76,7 +76,6 @@ struct DirectionalLight {
   float elevation = 70.0f; ///< Degrees above the horizon
   glm::vec3 color{1.0f};
   float intensity = 3.0f;
-  glm::vec3 ambient{0.08f}; ///< Ambient light of the whole scene
 
   /// Direction the light travels in, from the sky towards the ground.
   [[nodiscard]] glm::vec3 getDirection() const {

@@ -1,0 +1,67 @@
+#version 450 core
+#include "../common/math.glsl"
+#include "../common/cubemap.glsl"
+
+// Diffuse irradiance map. For each normal, the environment is integrated
+// over the hemisphere around it, weighted by the cosine, and divided by PI:
+// the light a white Lambert surface facing that way sends back.
+//
+// The integral runs over every texel of a small mip level of the
+// environment, weighted by the solid angle it covers. Irradiance is so
+// smooth that a 32x32 level loses nothing, and unlike random sampling the
+// result has no noise.
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (binding = 0) uniform samplerCube uEnvironment;
+layout (binding = 0, rgba16f) uniform writeonly imageCube uIrradiance;
+
+uniform int uSourceLevel;
+
+// Solid angle of a cube map texel, from the area of its projection on the
+// unit sphere (Driscoll 2012, "Cubemap Texel Solid Angle")
+float areaElement(float x, float y)
+{
+    return atan(x * y, sqrt(x * x + y * y + 1.0));
+}
+
+float texelSolidAngle(ivec2 texel, int size)
+{
+    float halfTexel = 1.0 / float(size);
+    vec2 center = (vec2(texel) + 0.5) / float(size) * 2.0 - 1.0;
+    vec2 minCorner = center - halfTexel;
+    vec2 maxCorner = center + halfTexel;
+    return areaElement(minCorner.x, minCorner.y) - areaElement(minCorner.x, maxCorner.y)
+         - areaElement(maxCorner.x, minCorner.y) + areaElement(maxCorner.x, maxCorner.y);
+}
+
+void main()
+{
+    ivec3 texel = ivec3(gl_GlobalInvocationID);
+    int size = imageSize(uIrradiance).x;
+    if (texel.x >= size || texel.y >= size)
+        return;
+
+    vec3 normal = cubeMapDirection(texel, size);
+    int sourceSize = textureSize(uEnvironment, uSourceLevel).x;
+
+    vec3 irradiance = vec3(0.0);
+    for (int face = 0; face < 6; ++face)
+    {
+        for (int y = 0; y < sourceSize; ++y)
+        {
+            for (int x = 0; x < sourceSize; ++x)
+            {
+                vec3 direction = cubeMapDirection(ivec3(x, y, face), sourceSize);
+                float cosTheta = dot(normal, direction);
+                if (cosTheta <= 0.0)
+                    continue;
+                // Sampling a texel center returns that texel alone
+                vec3 radiance = textureLod(uEnvironment, direction, float(uSourceLevel)).rgb;
+                irradiance += radiance * cosTheta * texelSolidAngle(ivec2(x, y), sourceSize);
+            }
+        }
+    }
+
+    imageStore(uIrradiance, texel, vec4(irradiance / PI, 1.0));
+}

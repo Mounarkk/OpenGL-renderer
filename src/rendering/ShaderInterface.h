@@ -31,6 +31,7 @@ constexpr GLuint kScreenUnit = 5;
 constexpr GLuint kMetallicRoughnessUnit = 6;
 constexpr GLuint kOcclusionUnit = 7;
 constexpr GLuint kEmissiveUnit = 8;
+constexpr GLuint kIrradianceUnit = 9;
 
 // Array sizes
 constexpr int kCascadeCount = 4;
@@ -49,7 +50,6 @@ struct FrameUniforms {
 struct DirectionalLightUniforms {
   glm::vec4 direction; ///< xyz direction the light travels in, w unused
   glm::vec4 radiance;  ///< rgb color * intensity, w unused
-  glm::vec4 ambient;   ///< rgb ambient term of the scene, w unused
 };
 
 struct PointLightUniforms {
@@ -67,6 +67,9 @@ struct SpotLightUniforms {
 struct LightUniforms {
   DirectionalLightUniforms sun;
   glm::ivec4 counts; ///< x point lights, y spot lights, z has sun
+  /// x intensity of the environment lighting (0 when disabled), y intensity
+  /// of the sky as seen by the camera
+  glm::vec4 environment;
   PointLightUniforms pointLights[kMaxPointLights];
   SpotLightUniforms spotLights[kMaxSpotLights];
 };
