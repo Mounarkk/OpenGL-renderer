@@ -189,7 +189,7 @@ ForwardLightingPass::ForwardLightingPass(const int width, const int height) {
   mShader = ResourceManager::loadShader(dir + "forward_shader.vert",
                                         dir + "forward_shader.frag");
   mFBO = std::make_unique<FrameBuffer>(width, height);
-  mSkybox = std::make_unique<Skybox>(Config::getSkyboxPath());
+  mSkybox = std::make_unique<Skybox>();
 
   mGizmoShader = ResourceManager::loadShader(dir + "light_gizmo.vert",
                                              dir + "light_gizmo.frag");
@@ -267,7 +267,7 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
   if (frame.settings.showLightGizmos)
     drawLightGizmos(frame);
 
-  mSkybox->render();
+  mSkybox->render(frame.environment->getCubeMap());
 
   FrameBuffer::unbind();
 }

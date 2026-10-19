@@ -8,8 +8,12 @@ renderer.vsync = true
 paths.shaders = res/shaders/
 paths.models = res/models/
 paths.textures = res/textures/
-paths.skybox = res/skyboxes/arctic/
 paths.screenshots = screenshots/
+
+# Light of the surroundings: an HDR panorama (.hdr), or a directory with six
+# cube map faces (right, left, top, bottom, front and back .jpg) such as
+# res/skyboxes/arctic/.
+paths.environment = res/environments/cannon_2k.hdr
 
 camera.fov = 45.0
 camera.speed = 5.0

@@ -8,6 +8,10 @@ using namespace ShaderInterface;
 
 Renderer::Renderer()
     : mFrameBuffer(sizeof(FrameUniforms)), mLightBuffer(sizeof(LightUniforms)) {
+  // Filters across cube map faces instead of clamping at their edges, which
+  // matters for the blurry mip levels of the environment
+  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+  mEnvironment = std::make_unique<EnvironmentMap>(Config::getEnvironmentPath());
 }
 
 void Renderer::submit(Scene &scene) {
@@ -85,6 +89,7 @@ FrameContext Renderer::beginFrame(const FrameContext &cameraFrame) {
   FrameContext frame = cameraFrame;
   frame.settings = mSettings;
   frame.lights = &mLights;
+  frame.environment = mEnvironment.get();
 
   FrameUniforms uniforms{};
   uniforms.view = frame.view;

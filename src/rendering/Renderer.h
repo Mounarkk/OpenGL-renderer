@@ -1,6 +1,7 @@
 #pragma once
 #include "../gl/UniformBuffer.h"
 #include "../scene/Scene.h"
+#include "EnvironmentMap.h"
 #include "RenderPass.h"
 #include "RendererSettings.h"
 #include "ShaderInterface.h"
@@ -41,11 +42,13 @@ public:
 protected:
   std::vector<RenderCommand> mCommandQueue;
   ShaderInterface::LightUniforms mLights{};
+  std::unique_ptr<EnvironmentMap> mEnvironment;
   RendererSettings mSettings;
   RenderStats mStats;
 
   /// Uploads the frame and light blocks and binds them to their binding
-  /// points. Returns the frame context completed with settings and lights.
+  /// points. Returns the frame context completed with settings, lights and
+  /// environment.
   FrameContext beginFrame(const FrameContext &cameraFrame);
 
 private:

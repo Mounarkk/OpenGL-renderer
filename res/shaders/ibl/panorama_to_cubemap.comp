@@ -1,0 +1,28 @@
+#version 450 core
+#include "../common/math.glsl"
+#include "../common/cubemap.glsl"
+
+// Resamples an equirectangular panorama into the six faces of a cube map.
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (binding = 0) uniform sampler2D uPanorama;
+layout (binding = 0, rgba16f) uniform writeonly imageCube uCubeMap;
+
+void main()
+{
+    ivec3 texel = ivec3(gl_GlobalInvocationID);
+    int size = imageSize(uCubeMap).x;
+    if (texel.x >= size || texel.y >= size)
+        return;
+
+    // Longitude around Y, +X at the center of the image, and latitude from
+    // the top row (+Y) to the bottom one (-Y)
+    vec3 direction = cubeMapDirection(texel, size);
+    vec2 uv = vec2(atan(direction.z, direction.x) / (2.0 * PI) + 0.5,
+                   acos(clamp(direction.y, -1.0, 1.0)) / PI);
+    vec3 radiance = textureLod(uPanorama, uv, 0.0).rgb;
+
+    // A direct sun can exceed the half float range
+    imageStore(uCubeMap, texel, vec4(min(radiance, vec3(HALF_MAX)), 1.0));
+}

@@ -4,32 +4,24 @@
 #include "../gl/VertexBuffer.h"
 
 #include <memory>
-#include <string>
 
 /**
- * Cube map drawn behind everything else.
+ * Cube map drawn behind everything else, usually the environment map.
  *
- * Expects right, left, top, bottom, front and back .jpg faces in the given
- * directory. It is drawn last with GL_LEQUAL so it only fills pixels that no
- * geometry wrote to. The sun is drawn on top of the cube map where the
- * directional light comes from, which makes the shadows easy to check.
+ * It is drawn last with GL_LEQUAL so it only fills pixels that no geometry
+ * wrote to. The sun is drawn on top of the cube map where the directional
+ * light comes from, which makes the shadows easy to check.
  */
 class Skybox {
 public:
-  explicit Skybox(const std::string &directory);
-  ~Skybox();
-
-  Skybox(const Skybox &) = delete;
-  Skybox &operator=(const Skybox &) = delete;
+  Skybox();
 
   /// Draws the sky. Reads the camera and the sun from the frame and light
   /// uniform blocks, which must be bound.
-  void render() const;
+  void render(GLuint cubeMap) const;
 
 private:
-  GLuint mCubeMapTexID = 0;
   std::unique_ptr<VertexArray> mVAO;
   std::unique_ptr<VertexBuffer> mVBO;
   std::shared_ptr<Shader> mShader;
-  bool mAllocated = false;
 };

@@ -67,6 +67,7 @@ set(SOURCES
 
     src/input/InputHandler.cpp
 
+    src/rendering/EnvironmentMap.cpp
     src/rendering/Frustum.cpp
     src/rendering/Material.cpp
     src/rendering/Mesh.cpp

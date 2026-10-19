@@ -36,7 +36,8 @@ public:
   static std::string getShaderPath();
   static std::string getModelPath();
   static std::string getTexturePath();
-  static std::string getSkyboxPath();
+  /// HDR panorama (.hdr) or directory of cube map faces lighting the scene.
+  static std::string getEnvironmentPath();
   static std::string getScreenshotPath();
 
   static float getCameraFOV();

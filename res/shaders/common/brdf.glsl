@@ -2,7 +2,7 @@
 // References: Karis 2013 "Real Shading in Unreal Engine 4", Lagarde and
 // de Rousiers 2014 "Moving Frostbite to PBR".
 
-const float PI = 3.14159265359;
+#include "math.glsl"
 
 // Everything a light needs to know about the shaded point
 struct Surface {

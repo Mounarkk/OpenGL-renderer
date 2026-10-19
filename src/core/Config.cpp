@@ -86,8 +86,9 @@ std::string Config::getTexturePath() {
   return resolvePath(getString("paths.textures", "res/textures/"));
 }
 
-std::string Config::getSkyboxPath() {
-  return resolvePath(getString("paths.skybox", "res/skyboxes/arctic/"));
+std::string Config::getEnvironmentPath() {
+  return resolvePath(
+      getString("paths.environment", "res/environments/cannon_2k.hdr"));
 }
 
 std::string Config::getScreenshotPath() {

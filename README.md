@@ -200,6 +200,9 @@ Libraries: [GLFW](https://www.glfw.org/), [glad](https://github.com/Dav1dde/glad
 [stb](https://github.com/nothings/stb) and
 [Dear ImGui](https://github.com/ocornut/imgui).
 
+Cannon environment by Greg Zaal, [Poly Haven](https://polyhaven.com/a/cannon)
+([CC0](https://creativecommons.org/publicdomain/zero/1.0/)).
+
 Damaged Helmet by theblueturtle_
 ([CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)), glTF
 conversion by ctxwing

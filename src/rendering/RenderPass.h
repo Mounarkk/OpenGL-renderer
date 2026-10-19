@@ -2,6 +2,7 @@
 #include "../gl/FrameBuffer.h"
 #include "../gl/Shader.h"
 #include "../gl/UniformBuffer.h"
+#include "EnvironmentMap.h"
 #include "Frustum.h"
 #include "Material.h"
 #include "Mesh.h"
@@ -35,6 +36,7 @@ struct FrameContext {
   /// Filled by the renderer
   RendererSettings settings;
   const ShaderInterface::LightUniforms *lights = nullptr;
+  const EnvironmentMap *environment = nullptr;
 };
 
 /// A step of a renderer's frame.
@@ -96,8 +98,8 @@ private:
 };
 
 /**
- * Forward Blinn-Phong lighting into an HDR color target, followed by the
- * light markers and the skybox. Reads the shadow map rendered before.
+ * Forward physically based lighting into an HDR color target, followed by
+ * the light markers and the sky. Reads the shadow map rendered before.
  */
 class ForwardLightingPass final : public RenderPass {
 public:
