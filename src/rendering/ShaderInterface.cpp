@@ -19,6 +19,8 @@ std::string defines() {
       << "#define OCCLUSION_UNIT " << kOcclusionUnit << "\n"
       << "#define EMISSIVE_UNIT " << kEmissiveUnit << "\n"
       << "#define IRRADIANCE_UNIT " << kIrradianceUnit << "\n"
+      << "#define PREFILTERED_UNIT " << kPrefilteredUnit << "\n"
+      << "#define BRDF_LUT_UNIT " << kBrdfLutUnit << "\n"
       << "#define CASCADE_COUNT " << kCascadeCount << "\n"
       << "#define MAX_POINT_LIGHTS " << kMaxPointLights << "\n"
       << "#define MAX_SPOT_LIGHTS " << kMaxSpotLights << "\n";

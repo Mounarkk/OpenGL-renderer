@@ -32,6 +32,8 @@ constexpr GLuint kMetallicRoughnessUnit = 6;
 constexpr GLuint kOcclusionUnit = 7;
 constexpr GLuint kEmissiveUnit = 8;
 constexpr GLuint kIrradianceUnit = 9;
+constexpr GLuint kPrefilteredUnit = 10;
+constexpr GLuint kBrdfLutUnit = 11;
 
 // Array sizes
 constexpr int kCascadeCount = 4;
@@ -68,7 +70,8 @@ struct LightUniforms {
   DirectionalLightUniforms sun;
   glm::ivec4 counts; ///< x point lights, y spot lights, z has sun
   /// x intensity of the environment lighting (0 when disabled), y intensity
-  /// of the sky as seen by the camera
+  /// of the sky as seen by the camera, z last mip level of the prefiltered
+  /// map
   glm::vec4 environment;
   PointLightUniforms pointLights[kMaxPointLights];
   SpotLightUniforms spotLights[kMaxSpotLights];

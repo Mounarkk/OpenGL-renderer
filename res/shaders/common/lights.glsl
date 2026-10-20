@@ -19,7 +19,8 @@ struct SpotLight {
 layout (std140, binding = LIGHTS_BLOCK) uniform LightsBlock {
     DirectionalLight sun;
     ivec4 counts; // x point lights, y spot lights, z has sun
-    vec4 environment; // x lighting intensity, y sky intensity
+    vec4 environment; // x lighting intensity, y sky intensity, z last mip
+                      // level of the prefiltered map
     PointLight pointLights[MAX_POINT_LIGHTS];
     SpotLight spotLights[MAX_SPOT_LIGHTS];
 } lights;

@@ -24,6 +24,14 @@ constexpr int kMaxCubeMapSize = 1024;
 constexpr int kIrradianceSize = 32;
 constexpr int kIrradianceSourceSize = 32;
 
+// Mirror reflections at level 0 down to 8x8 faces for the roughest ones
+constexpr int kPrefilteredSize = 256;
+constexpr int kPrefilteredLevels = 6;
+constexpr GLuint kPrefilteredSamples = 256;
+
+constexpr int kBrdfLutSize = 128;
+constexpr GLuint kBrdfLutSamples = 512;
+
 constexpr GLuint kComputeLocalSize = 8;
 
 int mipLevels(const int size) {
@@ -49,6 +57,8 @@ EnvironmentMap::EnvironmentMap(const std::string &path) {
   glTextureParameteri(mCubeMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   computeIrradiance();
+  computePrefilteredMap();
+  computeBrdfLut();
 
   // Only to report the time spent, the GPU work is otherwise asynchronous
   glFinish();
@@ -60,7 +70,8 @@ EnvironmentMap::EnvironmentMap(const std::string &path) {
 
 EnvironmentMap::~EnvironmentMap() {
   if (glfwGetCurrentContext()) {
-    const GLuint textures[] = {mCubeMap, mIrradianceMap};
+    const GLuint textures[] = {mCubeMap, mIrradianceMap, mPrefilteredMap,
+                               mBrdfLut};
     glDeleteTextures(static_cast<GLsizei>(std::size(textures)), textures);
   }
 }
@@ -181,6 +192,54 @@ void EnvironmentMap::computeIrradiance() {
   glBindImageTexture(0, mIrradianceMap, 0, GL_TRUE, 0, GL_WRITE_ONLY,
                      GL_RGBA16F);
   shader->dispatch(kIrradianceSize, kIrradianceSize, 6, kComputeLocalSize,
+                   kComputeLocalSize);
+  glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+}
+
+void EnvironmentMap::computePrefilteredMap() {
+  // Never larger than the environment itself
+  const int size = std::min(kPrefilteredSize, mSize);
+  mPrefilteredLevels = std::min(kPrefilteredLevels, mipLevels(size));
+
+  glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &mPrefilteredMap);
+  glTextureStorage2D(mPrefilteredMap, mPrefilteredLevels, GL_RGBA16F, size,
+                     size);
+  glTextureParameteri(mPrefilteredMap, GL_TEXTURE_MIN_FILTER,
+                      GL_LINEAR_MIPMAP_LINEAR);
+  glTextureParameteri(mPrefilteredMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  const auto shader = ResourceManager::loadComputeShader(
+      Config::getShaderPath() + "ibl/prefilter.comp");
+  shader->setUInt("uSampleCount", kPrefilteredSamples);
+  glBindTextureUnit(0, mCubeMap);
+
+  // One dispatch per level, each one short enough to keep the GPU responsive
+  for (int level = 0; level < mPrefilteredLevels; ++level) {
+    const float roughness =
+        static_cast<float>(level) / static_cast<float>(mPrefilteredLevels - 1);
+    const auto levelSize = static_cast<GLuint>(size >> level);
+    shader->setFloat("uRoughness", roughness);
+    glBindImageTexture(0, mPrefilteredMap, level, GL_TRUE, 0, GL_WRITE_ONLY,
+                       GL_RGBA16F);
+    shader->dispatch(levelSize, levelSize, 6, kComputeLocalSize,
+                     kComputeLocalSize);
+  }
+  glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+}
+
+void EnvironmentMap::computeBrdfLut() {
+  glCreateTextures(GL_TEXTURE_2D, 1, &mBrdfLut);
+  glTextureStorage2D(mBrdfLut, 1, GL_RG16F, kBrdfLutSize, kBrdfLutSize);
+  glTextureParameteri(mBrdfLut, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(mBrdfLut, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTextureParameteri(mBrdfLut, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTextureParameteri(mBrdfLut, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+  const auto shader = ResourceManager::loadComputeShader(
+      Config::getShaderPath() + "ibl/brdf_lut.comp");
+  shader->setUInt("uSampleCount", kBrdfLutSamples);
+  glBindImageTexture(0, mBrdfLut, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RG16F);
+  shader->dispatch(kBrdfLutSize, kBrdfLutSize, 1, kComputeLocalSize,
                    kComputeLocalSize);
   glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 }

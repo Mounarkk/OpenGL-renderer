@@ -29,10 +29,22 @@ public:
   /// to multiply with the diffuse color.
   [[nodiscard]] GLuint getIrradianceMap() const { return mIrradianceMap; }
 
+  /// Environment blurred by the specular lobe, one mip level per roughness:
+  /// level i is for roughness i / (levels - 1).
+  [[nodiscard]] GLuint getPrefilteredMap() const { return mPrefilteredMap; }
+  [[nodiscard]] int getPrefilteredLevels() const { return mPrefilteredLevels; }
+
+  /// Scale (R) and bias (G) to apply to f0, for each NdotV (U) and
+  /// roughness (V). Independent of the environment.
+  [[nodiscard]] GLuint getBrdfLut() const { return mBrdfLut; }
+
 private:
   GLuint mCubeMap = 0;
   GLuint mIrradianceMap = 0;
+  GLuint mPrefilteredMap = 0;
+  GLuint mBrdfLut = 0;
   int mSize = 0;
+  int mPrefilteredLevels = 0;
 
   /// Allocates mCubeMap with a full mip chain.
   void createCubeMap(int size);
@@ -42,4 +54,6 @@ private:
   void createUniformSky();
 
   void computeIrradiance();
+  void computePrefilteredMap();
+  void computeBrdfLut();
 };

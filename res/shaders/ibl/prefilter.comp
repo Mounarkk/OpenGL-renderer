@@ -1,0 +1,72 @@
+#version 450 core
+#include "../common/brdf.glsl"
+#include "../common/cubemap.glsl"
+#include "../common/sampling.glsl"
+
+// One mip level of the prefiltered environment map: the environment
+// convolved with the GGX lobe of the roughness of that level. This is the
+// first half of the split sum approximation (Karis 2013, "Real Shading in
+// Unreal Engine 4").
+//
+// The lobe depends on the view direction, unknown here, so the view is
+// assumed to be along the normal and the reflection direction. It removes
+// the stretching of reflections at grazing angles, the main error of the
+// method.
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (binding = 0) uniform samplerCube uEnvironment;
+layout (binding = 0, rgba16f) uniform writeonly imageCube uPrefiltered;
+
+uniform float uRoughness;
+uniform uint uSampleCount;
+
+void main()
+{
+    ivec3 texel = ivec3(gl_GlobalInvocationID);
+    int size = imageSize(uPrefiltered).x;
+    if (texel.x >= size || texel.y >= size)
+        return;
+
+    vec3 n = cubeMapDirection(texel, size);
+    float sourceSize = float(textureSize(uEnvironment, 0).x);
+
+    // A mirror only needs the environment at the resolution of this level
+    if (uRoughness == 0.0)
+    {
+        float level = log2(sourceSize / float(size));
+        imageStore(uPrefiltered, texel, vec4(textureLod(uEnvironment, n, level).rgb, 1.0));
+        return;
+    }
+
+    float alpha = uRoughness * uRoughness;
+    // Solid angle of a texel of the environment's first level
+    float texelSolidAngle = 4.0 * PI / (6.0 * sourceSize * sourceSize);
+
+    vec3 color = vec3(0.0);
+    float totalWeight = 0.0;
+    for (uint i = 0u; i < uSampleCount; ++i)
+    {
+        vec3 h = importanceSampleGGX(hammersley(i, uSampleCount), n, alpha);
+        float NdotH = max(dot(n, h), 0.0);
+        vec3 l = 2.0 * NdotH * h - n; // view = normal
+        float NdotL = dot(n, l);
+        if (NdotL <= 0.0)
+            continue;
+
+        // Filtered importance sampling (Krivanek and Colbert 2008): each
+        // sample reads a mip level covering the solid angle it stands for,
+        // instead of a single texel, which removes the bright speckles a
+        // small sun or lamp would leave with few samples
+        float pdf = distributionGGX(NdotH, alpha) * 0.25;
+        float sampleSolidAngle = 1.0 / (float(uSampleCount) * pdf);
+        float level = max(0.5 * log2(sampleSolidAngle / texelSolidAngle) + 1.0, 0.0);
+
+        // Weighted by NdotL, which Karis found to match the reference
+        // better than a plain average
+        color += textureLod(uEnvironment, l, level).rgb * NdotL;
+        totalWeight += NdotL;
+    }
+
+    imageStore(uPrefiltered, texel, vec4(color / totalWeight, 1.0));
+}

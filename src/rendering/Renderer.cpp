@@ -35,8 +35,9 @@ void Renderer::collectLights(Scene &scene) {
   mLights.counts = glm::ivec4(0);
 
   const float intensity = mSettings.environmentIntensity;
-  mLights.environment = {mSettings.environmentLighting ? intensity : 0.0f,
-                         intensity, 0.0f, 0.0f};
+  mLights.environment = {
+      mSettings.environmentLighting ? intensity : 0.0f, intensity,
+      static_cast<float>(mEnvironment->getPrefilteredLevels() - 1), 0.0f};
 
   // The first directional light is the sun
   for (const auto entity : scene.getAll<DirectionalLight>()) {

@@ -1,0 +1,56 @@
+#version 450 core
+#include "../common/brdf.glsl"
+#include "../common/sampling.glsl"
+
+// Second half of the split sum: the specular BRDF integrated over the
+// hemisphere under a uniform white light, for each NdotV (x) and roughness
+// (y). Fresnel is split out of the integral so that f0 can be applied
+// later: the result is f0 * scale + bias.
+//
+// It only depends on the BRDF, never on the environment or the material.
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout (binding = 0, rg16f) uniform writeonly image2D uLut;
+
+uniform uint uSampleCount;
+
+void main()
+{
+    ivec2 texel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(uLut);
+    if (texel.x >= size.x || texel.y >= size.y)
+        return;
+
+    // Texel centers, which is where linear filtering reads them back
+    float NdotV = (float(texel.x) + 0.5) / float(size.x);
+    float roughness = (float(texel.y) + 0.5) / float(size.y);
+    float alpha = roughness * roughness;
+
+    vec3 n = vec3(0.0, 0.0, 1.0);
+    vec3 v = vec3(sqrt(1.0 - NdotV * NdotV), 0.0, NdotV);
+
+    float scale = 0.0;
+    float bias = 0.0;
+    for (uint i = 0u; i < uSampleCount; ++i)
+    {
+        vec3 h = importanceSampleGGX(hammersley(i, uSampleCount), n, alpha);
+        float VdotH = max(dot(v, h), 0.0);
+        vec3 l = 2.0 * VdotH * h - v;
+        float NdotL = l.z;
+        if (NdotL <= 0.0)
+            continue;
+
+        // BRDF * NdotL divided by the probability of l, which is
+        // D * NdotH / (4 * VdotH): D cancels out
+        float NdotH = max(h.z, 1e-4);
+        float weight = 4.0 * visibilitySmithGGX(NdotV, NdotL, alpha) * NdotL * VdotH / NdotH;
+
+        // Schlick: F = f0 * (1 - Fc) + Fc
+        float Fc = pow(1.0 - VdotH, 5.0);
+        scale += (1.0 - Fc) * weight;
+        bias += Fc * weight;
+    }
+
+    imageStore(uLut, texel, vec4(scale, bias, 0.0, 0.0) / float(uSampleCount));
+}
