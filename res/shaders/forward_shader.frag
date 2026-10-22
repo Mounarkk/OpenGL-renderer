@@ -73,22 +73,35 @@ vec3 spotLightContribution(SpotLight light, Surface s, vec3 viewDir)
 // Image based lighting: light arriving from the whole environment.
 // Diffuse comes from the irradiance map. Specular uses the split sum: the
 // environment prefiltered for this roughness, in the reflection direction,
-// times the integral of the BRDF read from the lookup table.
-vec3 environmentLight(Surface s, vec3 viewDir)
+// times the integral of the BRDF, f0 * scale + bias, from the lookup table.
+//
+// The microfacet BRDF only counts light reflected once. On rough surfaces a
+// good part bounces between microfacets before leaving and is lost: up to
+// 40% for a rough metal. Fdez-Aguera 2019, "A Multiple-Scattering
+// Microfacet Model for Real-Time Image-based Lighting", adds it back from
+// the same lookup table, as a uniform lobe lit by the irradiance.
+vec3 environmentLight(Surface s, vec3 viewDir, vec2 scaleBias)
 {
-    float NdotV = max(dot(s.normal, viewDir), 1e-4);
-    vec2 scaleBias = texture(uBrdfLut, vec2(NdotV, s.roughness)).rg;
-    vec3 specularColor = s.f0 * scaleBias.x + scaleBias.y;
+    // Single scattering: the split sum
+    vec3 FssEss = s.f0 * scaleBias.x + scaleBias.y;
+
+    // Multiple scattering. A white surface reflects Ess in a single bounce,
+    // the remaining Ems leaves after more bounces, each one keeping the
+    // average Fresnel reflectance Favg: a geometric series
+    float Ess = scaleBias.x + scaleBias.y;
+    float Ems = 1.0 - Ess;
+    vec3 Favg = s.f0 + (1.0 - s.f0) / 21.0;
+    vec3 FmsEms = Ems * FssEss * Favg / (1.0 - Ems * Favg);
 
     vec3 reflected = reflect(-viewDir, s.normal);
     float level = s.roughness * lights.environment.z;
     vec3 radiance = textureLod(uPrefilteredMap, reflected, level).rgb;
     vec3 irradiance = texture(uIrradianceMap, s.normal).rgb;
 
-    // As for direct light, what the specular reflects does not diffuse
-    vec3 diffuse = s.diffuseColor * (1.0 - specularColor) * irradiance;
-    vec3 specular = specularColor * radiance;
-    return (diffuse + specular) * s.occlusion * lights.environment.x;
+    // What the specular reflects, in one bounce or more, does not diffuse
+    vec3 diffuse = s.diffuseColor * (1.0 - FssEss - FmsEms);
+    vec3 light = FssEss * radiance + (FmsEms + diffuse) * irradiance;
+    return light * s.occlusion * lights.environment.x;
 }
 
 int selectCascade(vec3 worldPos)
@@ -213,7 +226,16 @@ void main()
     vec3 viewDir = normalize(frame.cameraPosition.xyz - s.position);
     int layer = selectCascade(s.position);
 
-    vec3 result = environmentLight(s, viewDir);
+    // Integral of the specular BRDF for this angle and roughness
+    float NdotV = max(dot(s.normal, viewDir), 1e-4);
+    vec2 scaleBias = texture(uBrdfLut, vec2(NdotV, s.roughness)).rg;
+
+    // The same energy loss applies to direct lights. Scaling their lobe by
+    // the missing fraction is the approximation Filament uses.
+    float Ess = scaleBias.x + scaleBias.y;
+    s.energyCompensation = 1.0 + s.f0 * (1.0 / max(Ess, 1e-3) - 1.0);
+
+    vec3 result = environmentLight(s, viewDir, scaleBias);
     if (lights.counts.z != 0)
     {
         float shadow = sunShadow(s.position, geometryNormal, layer);

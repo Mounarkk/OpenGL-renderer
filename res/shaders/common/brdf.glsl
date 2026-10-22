@@ -12,6 +12,9 @@ struct Surface {
     vec3 f0;           // reflectance at normal incidence
     float roughness;   // perceptual roughness, squared for the lobes
     float occlusion;   // ambient occlusion, only applied to the ambient term
+    // Scales the specular lobe to add back the light it loses by reflecting
+    // only once off the microfacets, see environmentLight
+    vec3 energyCompensation;
 };
 
 // GGX / Trowbridge-Reitz normal distribution: how many microfacets face h
@@ -55,7 +58,8 @@ vec3 shadeSurface(Surface s, vec3 lightDir, vec3 viewDir, vec3 radiance)
 
     vec3 F = fresnelSchlick(VdotH, s.f0);
     vec3 specular = distributionGGX(NdotH, alpha) *
-                    visibilitySmithGGX(NdotV, NdotL, alpha) * F;
+                    visibilitySmithGGX(NdotV, NdotL, alpha) * F *
+                    s.energyCompensation;
     // Light reflected by the specular lobe is not available for diffusion
     vec3 diffuse = (1.0 - F) * s.diffuseColor / PI;
 
