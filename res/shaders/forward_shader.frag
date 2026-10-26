@@ -80,7 +80,17 @@ vec3 spotLightContribution(SpotLight light, Surface s, vec3 viewDir)
 // 40% for a rough metal. Fdez-Aguera 2019, "A Multiple-Scattering
 // Microfacet Model for Real-Time Image-based Lighting", adds it back from
 // the same lookup table, as a uniform lobe lit by the irradiance.
-vec3 environmentLight(Surface s, vec3 viewDir, vec2 scaleBias)
+// Ambient occlusion tells how much of the hemisphere is hidden, which suits
+// diffuse light. A reflection only looks in a cone around one direction,
+// narrow on smooth surfaces, so it is less likely to be hidden when seen
+// face-on. Lagarde and de Rousiers 2014, "Moving Frostbite to PBR".
+float specularOcclusion(float NdotV, float occlusion, float roughness)
+{
+    float alpha = roughness * roughness;
+    return clamp(pow(NdotV + occlusion, exp2(-16.0 * alpha - 1.0)) - 1.0 + occlusion, 0.0, 1.0);
+}
+
+vec3 environmentLight(Surface s, vec3 viewDir, vec2 scaleBias, vec3 geometryNormal)
 {
     // Single scattering: the split sum
     vec3 FssEss = s.f0 * scaleBias.x + scaleBias.y;
@@ -98,10 +108,17 @@ vec3 environmentLight(Surface s, vec3 viewDir, vec2 scaleBias)
     vec3 radiance = textureLod(uPrefilteredMap, reflected, level).rgb;
     vec3 irradiance = texture(uIrradianceMap, s.normal).rgb;
 
+    // Normal maps can bend the reflection under the actual surface, where
+    // it would read the environment through the object
+    float horizon = min(1.0 + dot(reflected, geometryNormal), 1.0);
+    float NdotV = max(dot(s.normal, viewDir), 1e-4);
+    float specularVisibility = specularOcclusion(NdotV, s.occlusion, s.roughness) * horizon * horizon;
+
     // What the specular reflects, in one bounce or more, does not diffuse
     vec3 diffuse = s.diffuseColor * (1.0 - FssEss - FmsEms);
-    vec3 light = FssEss * radiance + (FmsEms + diffuse) * irradiance;
-    return light * s.occlusion * lights.environment.x;
+    vec3 light = FssEss * radiance * specularVisibility +
+                 (FmsEms + diffuse) * irradiance * s.occlusion;
+    return light * lights.environment.x;
 }
 
 int selectCascade(vec3 worldPos)
@@ -235,7 +252,7 @@ void main()
     float Ess = scaleBias.x + scaleBias.y;
     s.energyCompensation = 1.0 + s.f0 * (1.0 / max(Ess, 1e-3) - 1.0);
 
-    vec3 result = environmentLight(s, viewDir, scaleBias);
+    vec3 result = environmentLight(s, viewDir, scaleBias, geometryNormal);
     if (lights.counts.z != 0)
     {
         float shadow = sunShadow(s.position, geometryNormal, layer);

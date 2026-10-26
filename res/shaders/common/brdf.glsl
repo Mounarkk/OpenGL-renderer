@@ -11,7 +11,7 @@ struct Surface {
     vec3 diffuseColor; // albedo of the non-metallic part, black for metals
     vec3 f0;           // reflectance at normal incidence
     float roughness;   // perceptual roughness, squared for the lobes
-    float occlusion;   // ambient occlusion, only applied to the ambient term
+    float occlusion;   // ambient occlusion, only applied to the environment
     // Scales the specular lobe to add back the light it loses by reflecting
     // only once off the microfacets, see environmentLight
     vec3 energyCompensation;
