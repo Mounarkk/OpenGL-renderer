@@ -6,12 +6,12 @@
 
 using namespace ShaderInterface;
 
-Renderer::Renderer()
+Renderer::Renderer(const std::string &environmentPath)
     : mFrameBuffer(sizeof(FrameUniforms)), mLightBuffer(sizeof(LightUniforms)) {
   // Filters across cube map faces instead of clamping at their edges, which
   // matters for the blurry mip levels of the environment
   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-  mEnvironment = std::make_unique<EnvironmentMap>(Config::getEnvironmentPath());
+  mEnvironment = std::make_unique<EnvironmentMap>(environmentPath);
 }
 
 void Renderer::submit(Scene &scene) {
@@ -117,7 +117,9 @@ FrameContext Renderer::beginFrame(const FrameContext &cameraFrame) {
   return frame;
 }
 
-ForwardRenderer::ForwardRenderer(const int width, const int height) {
+ForwardRenderer::ForwardRenderer(const int width, const int height,
+                                 const std::string &environmentPath)
+    : Renderer(environmentPath) {
   mShadowPass = std::make_unique<ShadowMappingPass>(Config::getShadowMapSize());
   mLightingPass = std::make_unique<ForwardLightingPass>(width, height);
   mPostProcessingPass = std::make_unique<PostProcessingPass>();

@@ -20,6 +20,7 @@ void printUsage(const char *program) {
       << "  --camera x,y,z,yaw,pitch  initial camera, angles in degrees\n"
       << "  --sun azimuth,elevation   initial sun angles in degrees\n"
       << "  --sun-only            disable the point and spot lights\n"
+      << "  --environment <path>  .hdr panorama or cube map directory\n"
       << "  --debug-view <name>   lit, albedo, normals, metallic, roughness,\n"
       << "                        occlusion or emissive\n"
       << "  --cascades            start with the cascade debug view\n"
@@ -60,6 +61,8 @@ int main(int argc, char **argv) {
         return 1;
       }
       options.hasSunOverride = true;
+    } else if (std::strcmp(argv[i], "--environment") == 0 && hasValue) {
+      options.environmentPath = argv[++i];
     } else if (std::strcmp(argv[i], "--sun-only") == 0) {
       options.sunOnly = true;
     } else if (std::strcmp(argv[i], "--debug-view") == 0 && hasValue) {

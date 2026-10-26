@@ -18,7 +18,8 @@ public:
 
   /// Draws the sky. Reads the camera and the sun from the frame and light
   /// uniform blocks, which must be bound.
-  void render(GLuint cubeMap) const;
+  /// @param level Mip level to read, negative to let the GPU pick it
+  void render(GLuint cubeMap, float level = -1.0f) const;
 
 private:
   std::unique_ptr<VertexArray> mVAO;

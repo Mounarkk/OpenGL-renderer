@@ -130,6 +130,7 @@ Embedded textures (`.glb`) are not supported yet.
 | `--camera x,y,z,yaw,pitch` | Initial camera, angles in degrees |
 | `--sun azimuth,elevation` | Initial sun direction, in degrees |
 | `--sun-only` | Start without the point and spot lights |
+| `--environment <path>` | Light the scene with another `.hdr` panorama or cube map directory |
 | `--cascades` | Start with the cascade debug view |
 | `--debug-view <channel>` | `albedo`, `normals`, `metallic`, `roughness`, `occlusion` or `emissive` |
 | `--screenshot <file>` | Render a few frames, save a PNG and quit |

@@ -14,6 +14,10 @@ enum class DebugView {
   Count
 };
 
+/// Cube map drawn as the sky. The maps derived from the environment can be
+/// shown in its place to check them.
+enum class SkyView { Environment, Irradiance, Prefiltered, Count };
+
 /// Tweakable renderer options, edited live from the debug UI.
 struct RendererSettings {
   // Shadows
@@ -44,6 +48,9 @@ struct RendererSettings {
 
   // Debug views
   DebugView debugView = DebugView::Lit;
+  SkyView skyView = SkyView::Environment;
+  /// Level of the prefiltered map shown by SkyView::Prefiltered.
+  float skyViewRoughness = 0.5f;
   bool showCascades = false;
   bool showLightGizmos = true;
 };

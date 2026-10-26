@@ -7,6 +7,9 @@ in vec3 TexCoords;
 
 layout (binding = SKYBOX_UNIT) uniform samplerCube uSkybox;
 
+// Mip level to read, negative for the usual filtering
+uniform float uLevel;
+
 // Angular radius of the disc, larger than the real sun to be easy to spot
 const float SUN_RADIUS = radians(1.5);
 const vec3 SUN_COLOR = vec3(1.0, 0.95, 0.8);
@@ -14,7 +17,9 @@ const vec3 SUN_COLOR = vec3(1.0, 0.95, 0.8);
 void main()
 {
     vec3 direction = normalize(TexCoords);
-    vec3 color = texture(uSkybox, direction).rgb * lights.environment.y;
+    vec3 color = uLevel < 0.0 ? texture(uSkybox, direction).rgb
+                              : textureLod(uSkybox, direction, uLevel).rgb;
+    color *= lights.environment.y;
 
     // The disc is drawn where the directional light comes from
     if (lights.counts.z != 0)

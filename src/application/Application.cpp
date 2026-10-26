@@ -102,7 +102,11 @@ void Application::Initialize() {
 
   // The framebuffer can differ from the window size on high DPI screens
   glfwGetFramebufferSize(m_Window, &m_Width, &m_Height);
-  m_Renderer = std::make_unique<ForwardRenderer>(m_Width, m_Height);
+  const std::string environment = m_Options.environmentPath.empty()
+                                      ? Config::getEnvironmentPath()
+                                      : m_Options.environmentPath;
+  m_Renderer =
+      std::make_unique<ForwardRenderer>(m_Width, m_Height, environment);
   m_Renderer->getSettings().localLightsEnabled = !m_Options.sunOnly;
   m_Renderer->getSettings().showCascades = m_Options.showCascades;
   m_Renderer->getSettings().debugView = m_Options.debugView;

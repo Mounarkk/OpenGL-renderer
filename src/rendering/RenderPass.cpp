@@ -270,7 +270,21 @@ void ForwardLightingPass::execute(const std::vector<RenderCommand> &commands,
   if (frame.settings.showLightGizmos)
     drawLightGizmos(frame);
 
-  mSkybox->render(frame.environment->getCubeMap());
+  const EnvironmentMap &environment = *frame.environment;
+  switch (frame.settings.skyView) {
+  case SkyView::Irradiance:
+    mSkybox->render(environment.getIrradianceMap());
+    break;
+  case SkyView::Prefiltered:
+    mSkybox->render(
+        environment.getPrefilteredMap(),
+        frame.settings.skyViewRoughness *
+            static_cast<float>(environment.getPrefilteredLevels() - 1));
+    break;
+  default:
+    mSkybox->render(environment.getCubeMap());
+    break;
+  }
 
   FrameBuffer::unbind();
 }

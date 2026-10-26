@@ -43,6 +43,9 @@ struct ApplicationOptions {
   /// Starts with the cascade debug view enabled.
   bool showCascades = false;
 
+  /// Environment map replacing the one of config.txt.
+  std::string environmentPath;
+
   /// Material channel shown instead of the lit image.
   DebugView debugView = DebugView::Lit;
 };

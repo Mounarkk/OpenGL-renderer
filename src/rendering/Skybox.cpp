@@ -37,11 +37,12 @@ Skybox::Skybox() {
                                         shaderDir + "skybox.frag");
 }
 
-void Skybox::render(const GLuint cubeMap) const {
+void Skybox::render(const GLuint cubeMap, const float level) const {
   // Drawn at the far plane: only fills pixels no geometry wrote to
   glDepthFunc(GL_LEQUAL);
 
   mShader->use();
+  mShader->setFloat("uLevel", level);
   glBindTextureUnit(ShaderInterface::kSkyboxUnit, cubeMap);
   mVAO->bind();
   glDrawArrays(GL_TRIANGLES, 0, 36);

@@ -120,6 +120,16 @@ void DebugUI::buildEnvironmentSection(RendererSettings &settings) {
   ImGui::Checkbox("Image based lighting", &settings.environmentLighting);
   ImGui::SliderFloat("Intensity##environment", &settings.environmentIntensity,
                      0.0f, 4.0f);
+
+  static const char *views[] = {"Environment", "Irradiance", "Prefiltered"};
+  static_assert(std::size(views) == static_cast<size_t>(SkyView::Count));
+  int view = static_cast<int>(settings.skyView);
+  if (ImGui::Combo("Sky shows", &view, views,
+                   static_cast<int>(std::size(views))))
+    settings.skyView = static_cast<SkyView>(view);
+  if (settings.skyView == SkyView::Prefiltered)
+    ImGui::SliderFloat("Roughness##sky", &settings.skyViewRoughness, 0.0f,
+                       1.0f);
 }
 
 void DebugUI::buildShadowSection(RendererSettings &settings) {

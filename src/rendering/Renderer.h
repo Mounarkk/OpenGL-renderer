@@ -7,6 +7,7 @@
 #include "ShaderInterface.h"
 
 #include <memory>
+#include <string>
 #include <vector>
 
 /**
@@ -22,7 +23,9 @@
  */
 class Renderer {
 public:
-  Renderer();
+  /// @param environmentPath HDR panorama or cube map directory lighting the
+  /// scene, see EnvironmentMap
+  explicit Renderer(const std::string &environmentPath);
   virtual ~Renderer() = default;
 
   /// Queues the renderable entities and collects the lights of the scene.
@@ -61,7 +64,7 @@ private:
 /// Shadow maps, forward lighting, then post processing to the window.
 class ForwardRenderer final : public Renderer {
 public:
-  ForwardRenderer(int width, int height);
+  ForwardRenderer(int width, int height, const std::string &environmentPath);
 
   void render(const FrameContext &frame) override;
   void resize(int width, int height) override;
