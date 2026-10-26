@@ -16,7 +16,7 @@ under another.
 Physically based shading describes what the surface *is* rather than how it
 should look, and derives the look from a model of light reflection that
 conserves energy. The same material then behaves correctly under the sun, a
-torch or a dim ambient. It is also the model used by every modern asset
+torch or an overcast sky. It is also the model used by every modern asset
 format and tool (glTF, Substance, Blender, game engines), so assets come in
 with the right parameters.
 
@@ -30,7 +30,7 @@ The glTF 2.0 model, stored in `Material`:
 | metallic | 0 for dielectrics (wood, stone, cloth, paint), 1 for bare metal | B channel of the packed map |
 | roughness | 0 is a mirror, 1 is fully blurry reflections | G channel of the packed map |
 | normal | Surface detail | tangent space normal map |
-| occlusion | Crevices that ambient light does not reach | R channel |
+| occlusion | Crevices that environment light does not reach | R channel |
 | emissive | Light the surface emits on its own | sRGB RGB |
 
 Each map is multiplied by a factor, and a missing map is a neutral 1x1
@@ -91,16 +91,10 @@ about PI times those of the Blinn-Phong version.
 
 ## 4. Ambient light
 
-Real ambient light comes from the whole environment and is the job of image
-based lighting, not implemented yet. Until then the ambient term is a
-hemisphere light: the sun's ambient color from above, fading to 30% of it
-from below. It keeps surfaces out of the sun readable, since their brightness
-still depends on their orientation.
-
-It is weakest on metals: they reflect the environment, and there is no
-environment yet. A smooth metal with no light in its reflection direction is
-nearly black, which is physically right for this lighting and the main reason
-image based lighting is the next step.
+Light that does not come from the sun or a lamp comes from the environment
+map, with image based lighting: an irradiance map for the diffuse part and
+prefiltered reflections for the specular part. See
+[Image based lighting](ibl.md).
 
 ## 5. Converting older formats
 

@@ -162,7 +162,7 @@ mistake is a compile error instead of lights showing up in the wrong place.
 | Block | Binding | Size | Content | Written by |
 |---|---|---|---|---|
 | `FrameBlock` | 0 | 224 B | view, projection and their product, camera position, near/far planes | `Renderer::beginFrame` |
-| `LightsBlock` | 1 | 2880 B | sun, light counts, 64 point lights, 16 spot lights | `Renderer::beginFrame` |
+| `LightsBlock` | 1 | 2880 B | sun, light counts, environment intensity, 64 point lights, 16 spot lights | `Renderer::beginFrame` |
 | `ShadowBlock` | 2 | 352 B | 4 cascade matrices, split distances, texel sizes, bias settings, flags | `ShadowMappingPass::execute` |
 
 The frame of the renderer, seen from the blocks:
