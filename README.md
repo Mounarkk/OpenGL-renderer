@@ -33,6 +33,11 @@
   roughness, normal, occlusion and emissive maps
 - Cook-Torrance BRDF: GGX distribution, height-correlated Smith visibility,
   Schlick Fresnel
+- Image based lighting from an HDR panorama: irradiance map, prefiltered
+  reflections and split sum lookup table, all computed at startup by compute
+  shaders
+- Multiple scattering compensation (Fdez-Agüera), so rough metals keep their
+  energy, and specular occlusion
 - OBJ and other Phong materials converted on import (`Kd`, `Ks`, `Ns`, `Ke`)
 - HDR rendering, exposure and ACES filmic tone mapping, sRGB-correct pipeline
 
@@ -56,7 +61,8 @@
 
 **Tooling**
 - Dear ImGui panel to edit lights, shadows, exposure and the camera live
-- Debug views for each material channel and for the shadow cascades
+- Debug views for each material channel and for the shadow cascades, and
+  the irradiance or prefiltered map drawn as the sky
 - Sun drawn in the sky and light markers, to check lighting at a glance
 - Command-line scene loading and screenshots, for scripted captures
 - Debug groups around every pass for RenderDoc and Nsight
@@ -68,6 +74,8 @@
 | ![Shadows](docs/images/shadows.jpg) | ![Cascades](docs/images/cascades.jpg) |
 | **Crytek Sponza** (converted OBJ materials) | **Damaged Helmet** (glTF PBR) |
 | ![Sponza](docs/images/sponza.jpg) | ![Damaged Helmet](docs/images/helmet.jpg) |
+| **Image based lighting**, roughness 0 to 1 | **White furnace test**, single then multiple scattering |
+| ![Spheres](docs/images/spheres.jpg) | ![Furnace](docs/images/furnace.jpg) |
 
 ![Material channels](docs/images/material-channels.jpg)
 <p align="center"><sub>Albedo, normals, roughness and metallic debug views of the Damaged Helmet</sub></p>
@@ -108,6 +116,11 @@ Models are not versioned, download them into `res/models/`:
 
 Embedded textures (`.glb`) are not supported yet.
 
+One HDR environment ships with the repository. Others, such as the
+[Poly Haven](https://polyhaven.com/hdris) panoramas, go in
+`res/environments/` and are picked with `paths.environment` in `config.txt`
+or `--environment`.
+
 ## Controls
 
 | Input | Action |
@@ -147,10 +160,12 @@ A frame of the forward renderer:
 
 ```mermaid
 flowchart LR
+    HDR[(HDR panorama)] -->|once, compute| Env[Environment, irradiance,<br/>prefiltered map, BRDF table]
     Scene[(EnTT scene)] -->|meshes, lights| Submit[Submit<br/>culling, sorting]
     Submit --> UBO[Frame and light<br/>uniform blocks]
     UBO --> Shadow[Shadow pass<br/>4 cascades, 1 draw per mesh]
-    Shadow -->|depth array| Lighting[Lighting pass<br/>GGX, HDR target]
+    Shadow -->|depth array| Lighting[Lighting pass<br/>GGX, IBL, HDR target]
+    Env --> Lighting
     Lighting --> Sky[Skybox and<br/>light markers]
     Sky --> Post[Post-process<br/>exposure, ACES, gamma]
     Post --> UI[ImGui panel]
@@ -165,7 +180,9 @@ src/
 ├── resource/      Assimp import, texture, shader and model caches
 ├── scene/         EnTT scene, components, camera
 └── ui/            Dear ImGui debug panel
-res/shaders/       GLSL, common/ holds the shared uniform blocks and BRDF
+res/shaders/       GLSL, common/ holds the shared uniform blocks and BRDF,
+                   ibl/ the precomputation compute shaders
+res/environments/  HDR panoramas
 docs/              notes on the techniques
 ```
 
@@ -178,6 +195,8 @@ the choices:
   fitting, single-pass rendering, biasing
 - [Physically based shading](docs/pbr.md): material model, BRDF, conversion
   of older formats, tone mapping
+- [Image based lighting](docs/ibl.md): irradiance, split sum, multiple
+  scattering, limits
 - [Shader interface](docs/shader-interface.md): uniforms, uniform blocks,
   binding points, std140
 
@@ -186,7 +205,7 @@ the choices:
 - [x] Cascaded shadow maps
 - [x] OpenGL 4.5, uniform buffers, ECS lights, frustum culling
 - [x] Physically based materials and tone mapping
-- [ ] Image based lighting
+- [x] Image based lighting
 - [ ] Spot light shadows, point light shadow atlas
 - [ ] Clustered light culling in compute
 - [ ] Volumetric fog
